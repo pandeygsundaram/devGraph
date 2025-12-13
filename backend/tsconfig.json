@@ -16,6 +16,6 @@
     "sourceMap": true,
     "types": ["node"]
   },
-  "include": ["src/**/*", "generated/**/*"],
+  "include": ["generated/**/*", "config", "controllers", "middleware", "routes", "types", "utils", "app.ts", "server.ts"],
   "exclude": ["node_modules", "dist"]
 }

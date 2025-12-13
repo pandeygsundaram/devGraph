@@ -4,8 +4,8 @@
   "description": "DevTrack AI Backend - Productivity tracking platform for engineering teams",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node src/server.ts",
-    "build": "tsc",
+    "dev": "nodemon --exec ts-node server.ts",
+    "build": "tsc && cp -r generated dist/",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -16,8 +16,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/adapter-pg": "^7.1.0",
-    "@prisma/client": "^7.1.0",
+    "@prisma/adapter-pg": "^6.19.0",
+    "@prisma/client": "^6.19.0",
     "@qdrant/js-client-rest": "^1.16.2",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
@@ -34,7 +34,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.0.1",
     "nodemon": "^3.1.11",
-    "prisma": "^7.1.0",
+    "prisma": "^6.19.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
