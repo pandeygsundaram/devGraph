@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { authApi } from '@/lib/api/endpoints';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 function CallbackHandler() {
   const router = useRouter();
@@ -49,15 +50,12 @@ function CallbackHandler() {
       }
 
       try {
-        // Set the token
         setToken(token);
-
-        // Fetch user profile
         const response = await authApi.getProfile();
 
-        if (response.success) {
-          setUser(response.data.user);
-          toast.success('Logged in successfully with Google!');
+        if (response.user) {
+          setUser(response.user);
+          toast.success('Logged in successfully!');
           router.push('/dashboard');
         } else {
           throw new Error('Failed to fetch user profile');
@@ -74,10 +72,10 @@ function CallbackHandler() {
   }, [searchParams, router, setToken, setUser]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Completing authentication...</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20">
+      <div className="text-center space-y-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+        <p className="text-muted-foreground">Completing authentication...</p>
       </div>
     </div>
   );
@@ -86,10 +84,10 @@ function CallbackHandler() {
 export default function AuthCallbackPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     }>

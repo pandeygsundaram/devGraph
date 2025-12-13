@@ -16,8 +16,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Visa Evaluation Platform",
-  description: "Evaluate your visa eligibility across multiple countries",
+  title: "Renard - Developer Activity Tracker",
+  description: "Track your development activity effortlessly across AI assistants, VS Code, CLI tools, and browsers",
 };
 
 export default function RootLayout({

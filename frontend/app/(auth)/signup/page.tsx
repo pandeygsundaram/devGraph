@@ -6,10 +6,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Card, CardBody, CardHeader } from '@/components/ui/Card';
-import { AuthNavbar } from '@/components/auth/AuthNavbar';
+import { Code2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -46,79 +46,93 @@ export default function SignupPage() {
   };
 
   return (
-    <>
-      <AuthNavbar />
-      <div className="min-h-screen flex items-center justify-center bg-[var(--background)] pt-24 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              DevTrack AI
-            </h1>
-            <p className="mt-2 text-[var(--muted-foreground)]">Create your account and get your API key</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 px-4 py-12">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Code2 className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold">Renard</h1>
           </div>
+          <CardTitle className="text-2xl">Create your account</CardTitle>
+          <CardDescription>Get your API key and start tracking</CardDescription>
+        </CardHeader>
 
-        <Card>
-          <CardHeader>
-            <h2 className="text-xl font-semibold text-[var(--foreground)]">Sign Up</h2>
-          </CardHeader>
-          <CardBody>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <CardContent className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Full Name</label>
               <Input
-                label="Full Name"
                 type="text"
                 placeholder="John Doe"
-                error={errors.name?.message}
                 {...register('name')}
               />
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name.message}</p>
+              )}
+            </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email</label>
               <Input
-                label="Email"
                 type="email"
                 placeholder="john@example.com"
-                error={errors.email?.message}
                 {...register('email')}
               />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
+              )}
+            </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Password</label>
               <Input
-                label="Password"
                 type="password"
                 placeholder="••••••••"
-                error={errors.password?.message}
                 {...register('password')}
               />
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
+              )}
+            </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Confirm Password</label>
               <Input
-                label="Confirm Password"
                 type="password"
                 placeholder="••••••••"
-                error={errors.confirmPassword?.message}
                 {...register('confirmPassword')}
               />
-
-              <Button
-                type="submit"
-                className="w-full"
-                isLoading={isLoading}
-              >
-                Create Account
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-[var(--muted-foreground)]">
-                Already have an account?{' '}
-                <Link
-                  href="/login"
-                  className="font-medium text-[var(--primary)] hover:opacity-80"
-                >
-                  Sign in
-                </Link>
-              </p>
+              {errors.confirmPassword && (
+                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+              )}
             </div>
-          </CardBody>
-        </Card>
-      </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </Button>
+          </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
+
+          <div className="text-center text-sm">
+            <span className="text-muted-foreground">Already have an account? </span>
+            <Link href="/login" className="text-primary hover:underline font-medium">
+              Sign in
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-    </>
   );
 }

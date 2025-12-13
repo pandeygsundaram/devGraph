@@ -4,7 +4,9 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
 import Link from 'next/link';
-import { ArrowRight, Globe, FileText, Zap, Shield, Key } from 'lucide-react';
+import { Code2, Activity, Zap, Shield, TrendingUp, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Home() {
   const router = useRouter();
@@ -17,33 +19,21 @@ export default function Home() {
   }, [isAuthenticated, router]);
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--background)]/80 backdrop-blur-lg border-b border-[var(--border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <Globe className="h-8 w-8 text-[var(--primary)]" />
-              <span className="ml-2 text-xl font-bold text-[var(--foreground)]">VisaEval</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/pricing"
-                className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Pricing
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Code2 className="h-6 w-6 text-primary" />
+              <span className="text-xl font-bold">Renard</span>
+            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/login">
+                <Button variant="ghost">Sign in</Button>
               </Link>
-              <Link
-                href="/login"
-                className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/signup"
-                className="bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 px-4 py-2 rounded-md text-sm font-semibold transition-all"
-              >
-                Get Started
+              <Link href="/signup">
+                <Button>Get Started</Button>
               </Link>
             </div>
           </div>
@@ -51,122 +41,102 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-5xl md:text-7xl font-bold text-[var(--foreground)] mb-6 leading-tight">
-            Evaluate Your Visa
-            <br />
-            <span className="text-[var(--primary)]">Eligibility in Minutes</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-[var(--muted-foreground)] mb-8 max-w-3xl mx-auto">
-            AI-powered visa evaluation platform. Upload your documents and get instant
-            analysis for visa eligibility across multiple countries.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/signup"
-              className="w-full sm:w-auto bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 flex items-center justify-center"
-            >
-              Start Free Evaluation
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-            <Link
-              href="/pricing"
-              className="w-full sm:w-auto bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] px-8 py-4 rounded-lg text-lg font-semibold transition-all border border-[var(--border)]"
-            >
-              View Pricing
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
+        <div className="max-w-4xl mx-auto text-center space-y-8">
+          <div className="space-y-4">
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
+              Track Your Development
+              <br />
+              <span className="text-primary">Activity Effortlessly</span>
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
+              Renard automatically captures and summarizes your developer work across
+              AI assistants, VS Code, CLI tools, and browsers.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/signup">
+              <Button size="lg" className="gap-2">
+                Start Tracking Free
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </Link>
           </div>
-          <p className="text-sm text-[var(--muted-foreground)] mt-4">
-            2 free evaluations • No credit card required
-          </p>
         </div>
       </section>
 
-      {/* Feature Preview */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      {/* Features Section */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-[var(--card)] rounded-2xl border border-[var(--border)] p-8 shadow-2xl">
-            <div className="aspect-video bg-[var(--muted)] rounded-lg border border-[var(--border)] flex items-center justify-center">
-              <div className="text-center">
-                <FileText className="h-24 w-24 text-[var(--primary)] mx-auto mb-4" />
-                <p className="text-[var(--muted-foreground)] text-lg">Upload documents and get instant analysis</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[var(--muted)]">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-[var(--foreground)] text-center mb-16">
-            Why Choose VisaEval?
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-16">
+            Why Renard?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Zap,
-                title: 'Instant Analysis',
-                description: 'Get your visa eligibility results in minutes, not days. Our AI processes your documents instantly.',
-              },
-              {
-                icon: Shield,
-                title: 'Secure & Private',
-                description: 'Your documents are encrypted and stored securely. We never share your information.',
-              },
-              {
-                icon: Key,
-                title: 'Easy API Integration',
-                description: 'Use simple API keys to integrate visa evaluation into your system. Developer-friendly documentation and instant access.',
-              }
-            ].map((feature, index) => (
-              <div
-                key={index}
-                className="bg-[var(--card)] rounded-xl p-8 border border-[var(--border)] hover:border-[var(--primary)] transition-all transform hover:scale-105"
-              >
-                <div className="inline-block p-3 rounded-lg bg-[var(--primary)]/10 mb-4">
-                  <feature.icon className="h-8 w-8 text-[var(--primary)]" />
-                </div>
-                <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">{feature.title}</h3>
-                <p className="text-[var(--muted-foreground)]">{feature.description}</p>
-              </div>
-            ))}
+            <Card className="border-muted hover:border-primary/50 transition-colors">
+              <CardHeader>
+                <Activity className="h-12 w-12 text-primary mb-4" />
+                <CardTitle>Automatic Tracking</CardTitle>
+                <CardDescription>
+                  Seamlessly capture your development activities across multiple platforms
+                  without manual logging.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-muted hover:border-primary/50 transition-colors">
+              <CardHeader>
+                <Shield className="h-12 w-12 text-primary mb-4" />
+                <CardTitle>Secure & Private</CardTitle>
+                <CardDescription>
+                  Your data is encrypted and stored securely. Complete control over your
+                  activity logs.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-muted hover:border-primary/50 transition-colors">
+              <CardHeader>
+                <TrendingUp className="h-12 w-12 text-primary mb-4" />
+                <CardTitle>Productivity Insights</CardTitle>
+                <CardDescription>
+                  Get detailed insights into your coding patterns and productivity trends
+                  over time.
+                </CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-[var(--foreground)] text-center mb-16">
-            Simple 3-Step Process
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 bg-muted/50">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-16">
+            Simple Integration
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {[
               {
                 step: '01',
-                title: 'Upload Documents',
-                description: 'Upload your resume, passport, and other required documents securely.'
+                title: 'Sign Up',
+                description: 'Create your account and get your unique API key instantly.',
               },
               {
                 step: '02',
-                title: 'AI Analysis',
-                description: 'Our AI evaluates your documents against visa requirements.'
+                title: 'Integrate',
+                description: 'Connect Renard with your VS Code, terminal, and browser using the API key.',
               },
               {
                 step: '03',
-                title: 'Get Results',
-                description: 'Receive detailed eligibility report with recommendations.'
-              }
+                title: 'Track & Analyze',
+                description: 'View your development activity and insights in real-time on your dashboard.',
+              },
             ].map((item, index) => (
-              <div key={index} className="relative">
-                <div className="text-6xl font-bold text-[var(--primary)] opacity-20 mb-4">{item.step}</div>
-                <h3 className="text-2xl font-semibold text-[var(--foreground)] mb-3">{item.title}</h3>
-                <p className="text-[var(--muted-foreground)]">{item.description}</p>
-                {index < 2 && (
-                  <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-[var(--primary)] to-transparent -translate-x-4" />
-                )}
+              <div key={index} className="text-center space-y-4">
+                <div className="text-6xl font-bold text-primary/20">{item.step}</div>
+                <h3 className="text-2xl font-semibold">{item.title}</h3>
+                <p className="text-muted-foreground">{item.description}</p>
               </div>
             ))}
           </div>
@@ -174,55 +144,41 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="max-w-4xl mx-auto">
-          <div className="relative bg-[var(--primary)] rounded-2xl p-12 text-center overflow-hidden">
-            {/* Gradient overlay - brighter at bottom, fading to top */}
-            <div className="absolute inset-0 bg-gradient-to-t from-white/[0.40] via-white/[0.10] to-white/[0.02] pointer-events-none" />
-
-            {/* Content */}
-            <div className="relative z-10">
-              <h2 className="text-4xl md:text-5xl font-bold text-[var(--primary-foreground)] mb-6">
-                Ready to Start Your Journey?
+          <Card className="border-primary/50 bg-gradient-to-br from-primary/10 to-background">
+            <CardContent className="p-12 text-center space-y-6">
+              <h2 className="text-4xl md:text-5xl font-bold">
+                Ready to Track Your Progress?
               </h2>
-              <p className="text-xl text-[var(--primary-foreground)] opacity-90 mb-8">
-                Start with 2 free evaluations. Upgrade anytime for unlimited access.
+              <p className="text-xl text-muted-foreground">
+                Start tracking your development activity today. No credit card required.
               </p>
-              <Link
-                href="/signup"
-                className="inline-block bg-[var(--background)] text-[var(--foreground)] hover:bg-[var(--card)] px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 shadow-lg relative overflow-hidden group"
-              >
-                {/* Button gradient overlay */}
-                <span className="absolute inset-0 bg-gradient-to-t from-white/[0.25] via-white/[0.08] to-white/[0.03] opacity-100 group-hover:opacity-80 transition-opacity pointer-events-none rounded-lg" />
-                <span className="relative z-10">Start Free Evaluation</span>
+              <Link href="/signup">
+                <Button size="lg" className="gap-2">
+                  Get Started Now
+                  <Zap className="h-4 w-4" />
+                </Button>
               </Link>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-[var(--card)] border-t border-[var(--border)] py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="flex items-center mb-4 md:mb-0">
-              <Globe className="h-6 w-6 text-[var(--primary)]" />
-              <span className="ml-2 text-lg font-bold text-[var(--foreground)]">VisaEval</span>
+      <footer className="border-t bg-muted/20">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Code2 className="h-6 w-6 text-primary" />
+              <span className="text-lg font-bold">Renard</span>
             </div>
-            <div className="flex items-center space-x-6 text-sm text-[var(--muted-foreground)]">
-              <Link href="/privacy" className="hover:text-[var(--foreground)] transition-colors">
-                Privacy Policy
-              </Link>
-              <Link href="/terms" className="hover:text-[var(--foreground)] transition-colors">
-                Terms of Service
-              </Link>
-              <Link href="/contact" className="hover:text-[var(--foreground)] transition-colors">
-                Contact
-              </Link>
-            </div>
-          </div>
-          <div className="mt-8 text-center text-sm text-[var(--muted-foreground)]">
-            © 2025 VisaEval. All rights reserved.
+            <p className="text-sm text-muted-foreground">
+              Track your development activity effortlessly
+            </p>
+            <p className="text-sm text-muted-foreground">
+              © 2025 Renard. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>
