@@ -17,6 +17,8 @@ It captures:
 - 📜 Structured session-based logging
 - 🧩 Works with any CLI via `renard`
 - 📂 JSONL logs (easy to query with `jq`, `grep`, etc.)
+- 💾 Reads conversation history directly from CLI storage (Claude & Gemini)
+- 🎯 Accurate conversation capture without terminal parsing
 
 ---
 
@@ -37,3 +39,10 @@ gemini
 ```
 
 renard will automatically intercept and track their interactions.
+
+**How it works:**
+
+- **Claude & Gemini**: Reads conversation history directly from their storage files
+  - Claude: `~/.claude/projects/`
+  - Gemini: `~/.gemini/tmp/*/chats/`
+- **OpenAI**: Standard output capture (may be enhanced in future versions)

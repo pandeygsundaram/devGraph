@@ -7,6 +7,7 @@ const TOOLS = ["claude", "openai", "gemini"];
 
 export function install() {
   console.log("Installing renard…");
+  console.log("Searching for CLI tools...\n");
 
   let foundAny = false;
 
@@ -14,9 +15,11 @@ export function install() {
     const bin = findBin(tool);
 
     if (!bin) {
-      // Silently skip tools not found
+      console.log(`⊘ ${tool} not found in PATH`);
       return;
     }
+
+    console;
 
     foundAny = true;
     const dir = path.dirname(bin);
