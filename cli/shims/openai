@@ -1,0 +1,3 @@
+#!/bin/bash
+export RENARD_REAL_CMD="$(command -v openai.real)"
+exec renard "$@"

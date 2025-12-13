@@ -1,0 +1,36 @@
+{
+  "name": "renard",
+  "version": "1.0.1",
+  "description": "Track LLM CLI interactions",
+  "type": "module",
+  "bin": {
+    "renard": "./bin/renard.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "shims/",
+    "README.md"
+  ],
+  "author": "neekunjchaturvedi",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^14.0.2"
+  },
+  "keywords": [
+    "llm",
+    "cli",
+    "claude",
+    "openai",
+    "gemini",
+    "developer-tools",
+    "ai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pandeygsundaram/devGraph"
+  }
+}

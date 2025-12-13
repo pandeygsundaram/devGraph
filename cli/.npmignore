@@ -1,0 +1,19 @@
+# Development
+node_modules
+npm-debug.log
+pnpm-lock.yaml
+yarn.lock
+
+# Git
+.git
+.gitignore
+
+# OS
+.DS_Store
+
+# Source-only files
+src/
+shims/
+icons/
+
+# Browser
