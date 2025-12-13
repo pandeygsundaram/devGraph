@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* Default to light theme */
+:root {
+  color-scheme: light;
+  --background: oklch(100% 0 0);
+  --foreground: oklch(21% 0.006 285.885);
+  --card: oklch(98% 0 0);
+  --card-foreground: oklch(21% 0.006 285.885);
+  --popover: oklch(100% 0 0);
+  --popover-foreground: oklch(21% 0.006 285.885);
+  --primary: oklch(45% 0.24 277.023);
+  --primary-foreground: oklch(93% 0.034 272.788);
+  --secondary: oklch(65% 0.241 354.308);
+  --secondary-foreground: oklch(94% 0.028 342.258);
+  --muted: oklch(95% 0 0);
+  --muted-foreground: oklch(50% 0.003 285.885);
+  --accent: oklch(77% 0.152 181.912);
+  --accent-foreground: oklch(38% 0.063 188.416);
+  --border: oklch(90% 0 0);
+  --input: oklch(95% 0 0);
+  --ring: oklch(45% 0.24 277.023);
+  --success: oklch(76% 0.177 163.223);
+  --success-foreground: oklch(37% 0.077 168.94);
+  --warning: oklch(82% 0.189 84.429);
+  --warning-foreground: oklch(41% 0.112 45.904);
+  --error: oklch(71% 0.194 13.428);
+  --error-foreground: oklch(27% 0.105 12.094);
+  --info: oklch(74% 0.16 232.661);
+  --info-foreground: oklch(29% 0.066 243.157);
+}
+
+/* Dark theme - DaisyUI forest */
+.dark {
+  color-scheme: dark;
+  --background: oklch(20.84% 0.008 17.911);
+  --foreground: oklch(83.768% 0.001 17.911);
+  --card: oklch(18.522% 0.007 17.911);
+  --card-foreground: oklch(83.768% 0.001 17.911);
+  --popover: oklch(16.203% 0.007 17.911);
+  --popover-foreground: oklch(83.768% 0.001 17.911);
+  --primary: oklch(68.628% 0.185 148.958);
+  --primary-foreground: oklch(0% 0 0);
+  --secondary: oklch(69.776% 0.135 168.327);
+  --secondary-foreground: oklch(13.955% 0.027 168.327);
+  --muted: oklch(16.203% 0.007 17.911);
+  --muted-foreground: oklch(60% 0.001 17.911);
+  --accent: oklch(70.628% 0.119 185.713);
+  --accent-foreground: oklch(14.125% 0.023 185.713);
+  --border: oklch(30.698% 0.039 171.364);
+  --input: oklch(30.698% 0.039 171.364);
+  --ring: oklch(68.628% 0.185 148.958);
+  --success: oklch(64.8% 0.15 160);
+  --success-foreground: oklch(0% 0 0);
+  --warning: oklch(84.71% 0.199 83.87);
+  --warning-foreground: oklch(0% 0 0);
+  --error: oklch(71.76% 0.221 22.18);
+  --error-foreground: oklch(0% 0 0);
+  --info: oklch(72.06% 0.191 231.6);
+  --info-foreground: oklch(0% 0 0);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
+}
+
+/* Better code/monospace font styling */
+code, pre, kbd, samp {
+  font-family: var(--font-mono), "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+}
+
+/* Improved heading typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* Better paragraph spacing */
+p {
+  line-height: 1.6;
+}
