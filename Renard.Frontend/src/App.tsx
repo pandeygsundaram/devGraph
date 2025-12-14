@@ -19,15 +19,15 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/extension-login" element={<ExtensionLoginPage />} />
+      <Route path="/extension-signup" element={<ExtensionSignupPage />} />
+      <Route path="/extension-success" element={<ExtensionSuccess />} />
 
       {/* --- Guest Only Routes (Login/Signup) --- */}
       {/* If logged in, these redirect to /dashboard */}
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/extension-login" element={<ExtensionLoginPage />} />
-        <Route path="/extension-signup" element={<ExtensionSignupPage />} />
-        <Route path="/extension-success" element={<ExtensionSuccess />} />
       </Route>
 
       {/* --- Protected Routes (Dashboard) --- */}
