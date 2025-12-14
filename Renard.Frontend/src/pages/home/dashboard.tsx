@@ -15,6 +15,8 @@ import axios from "axios";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
+  const [team, setTeam] = useState<any>(null);
+  const [apiKey, setApiKey] = useState<string>("");
   const [activities, setActivities] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalActivities: 0,
@@ -33,8 +35,17 @@ export default function DashboardPage() {
   const fetchUserData = async () => {
     try {
       const userData = localStorage.getItem("user");
+      const teamData = localStorage.getItem("team");
+      const apiKeyData = localStorage.getItem("apiKey");
+
       if (userData) {
         setUser(JSON.parse(userData));
+      }
+      if (teamData) {
+        setTeam(JSON.parse(teamData));
+      }
+      if (apiKeyData) {
+        setApiKey(apiKeyData);
       }
     } catch (error) {
       console.error("Error loading user data:", error);
@@ -95,6 +106,30 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
+
+      {/* Team & API Info */}
+      {(team || apiKey) && (
+        <div className="mb-6 bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              {team && (
+                <div className="mb-2">
+                  <span className="text-sm text-muted-foreground">Current Team:</span>
+                  <p className="font-semibold text-foreground">{team.name}</p>
+                </div>
+              )}
+              {apiKey && (
+                <div>
+                  <span className="text-sm text-muted-foreground">API Key:</span>
+                  <p className="font-mono text-xs text-foreground bg-secondary px-2 py-1 rounded inline-block mt-1">
+                    {apiKey.substring(0, 20)}...
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

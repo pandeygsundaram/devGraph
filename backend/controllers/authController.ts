@@ -72,6 +72,10 @@ export const register = async (req: Request<{}, {}, RegisterBody>, res: Response
       role: user.role,
     });
 
+    console.log('[Register] User object:', JSON.stringify(user, null, 2));
+    console.log('[Register] Team object:', JSON.stringify(team, null, 2));
+    console.log('[Register] API Key:', user.apiKey);
+
     res.status(201).json({
       message: 'User registered successfully',
       user,

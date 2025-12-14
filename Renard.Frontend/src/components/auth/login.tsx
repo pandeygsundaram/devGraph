@@ -25,13 +25,20 @@ export default function LoginPage() {
         password,
       });
 
-      const { token, user } = response.data;
+      const { token, user, apiKey, team } = response.data;
 
       localStorage.setItem("token", token);
-
       localStorage.setItem("user", JSON.stringify(user));
 
-      // 4. Redirect to dashboard
+      if (apiKey) {
+        localStorage.setItem("apiKey", apiKey);
+      }
+
+      if (team) {
+        localStorage.setItem("team", JSON.stringify(team));
+      }
+
+      // Redirect to dashboard
       navigate("/dashboard");
     } catch (err: any) {
       console.error("Login failed", err);

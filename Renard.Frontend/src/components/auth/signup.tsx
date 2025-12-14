@@ -28,10 +28,18 @@ export default function SignupPage() {
         password,
       });
 
-      const { token, user } = response.data;
+      const { token, user, apiKey, team } = response.data;
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
+
+      if (apiKey) {
+        localStorage.setItem("apiKey", apiKey);
+      }
+
+      if (team) {
+        localStorage.setItem("team", JSON.stringify(team));
+      }
 
       navigate("/dashboard");
     } catch (err: any) {
