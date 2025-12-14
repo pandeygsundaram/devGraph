@@ -1,25 +1,28 @@
 import React, { useState } from "react";
 import { ExtensionLayout } from "@/components/auth/extension-layout";
-import { Loader2, Terminal, Globe } from "lucide-react";
+import { Loader2, Terminal, Globe, CheckCircle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 
 export default function ExtensionLoginPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  // Detect source from URL (e.g. /extension-login?source=cli)
-  const source = searchParams.get("source");
+  const source = searchParams.get("source"); // cli | extension | null
+  const port = searchParams.get("port"); // CLI callback port
   const isCLI = source === "cli";
 
   const API_URL = import.meta.env.VITE_SERVER;
+  const EXTENSION_ID = import.meta.env.VITE_EXTENSION_ID;
 
-  async function onSubmit(event: React.SyntheticEvent) {
-    event.preventDefault();
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setIsLoading(true);
     setError("");
 
@@ -31,66 +34,116 @@ export default function ExtensionLoginPage() {
 
       const { token, user } = response.data;
 
-      // EXTENSION HANDSHAKE
-      if (window.chrome?.runtime?.sendMessage) {
+      // CLI AUTH FLOW
+      if (isCLI && port) {
         try {
-          window.chrome.runtime.sendMessage(
-            import.meta.env.VITE_EXTENSION_ID,
-            {
-              type: "AUTH_SUCCESS",
-              token,
-              user,
-            },
-            () => {
-              navigate("/extension-success");
+          await fetch(`http://localhost:${port}/auth/callback`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token, user }),
+          });
 
-              setTimeout(() => {
-                window.close();
-              }, 2000);
-            }
-          );
+          navigate("/extension-success");
+
+          setTimeout(() => {
+            window.close();
+          }, 2000);
         } catch (e) {
-          console.error("Failed to send token to extension", e);
+          console.error("Failed to send auth to CLI", e);
+          setError("Failed to complete CLI authentication");
         }
-      } else {
-        // Normal web login fallback
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
-        navigate("/dashboard");
+
+        return;
       }
+
+      /**
+       * ─────────────────────────────
+       * 2️⃣ EXTENSION AUTH FLOW
+       * ─────────────────────────────
+       */
+      if (window.chrome?.runtime?.sendMessage && EXTENSION_ID) {
+        window.chrome.runtime.sendMessage(
+          EXTENSION_ID,
+          {
+            type: "AUTH_SUCCESS",
+            token,
+            user,
+          },
+          () => {
+            setSuccess(true);
+
+            setTimeout(() => {
+              window.close();
+            }, 2000);
+          }
+        );
+
+        return;
+      }
+
+      /**
+       * ─────────────────────────────
+       * 3️⃣ NORMAL WEB LOGIN
+       * ─────────────────────────────
+       */
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      navigate("/dashboard");
     } catch (err: any) {
-      console.error("Login failed", err);
-      // specific error message from backend or fallback
-      const errorMessage =
-        err.response?.data?.message || "Invalid email or password.";
-      setError(errorMessage);
+      setError(err?.response?.data?.message || "Invalid email or password.");
     } finally {
       setIsLoading(false);
     }
   }
 
+  /**
+   * ─────────────────────────────
+   * SUCCESS UI
+   * ─────────────────────────────
+   */
+  if (success) {
+    return (
+      <ExtensionLayout
+        title="Authorized"
+        subtitle="You can safely close this window"
+      >
+        <div className="flex flex-col items-center gap-4 py-10">
+          <CheckCircle className="w-10 h-10 text-green-500" />
+          <p className="text-sm text-muted-foreground">
+            Authentication successful
+          </p>
+        </div>
+      </ExtensionLayout>
+    );
+  }
+
+  /**
+   * ─────────────────────────────
+   * LOGIN FORM
+   * ─────────────────────────────
+   */
   return (
     <ExtensionLayout
-      title={isCLI ? "Authorize CLI" : "Connect Extension"}
+      title={isCLI ? "Authorize Renard CLI" : "Connect Renard Extension"}
       subtitle={
         isCLI
-          ? "Log in to enable terminal context capturing."
-          : "Sync your browser history with your Renard workspace."
+          ? "Grant terminal activity access"
+          : "Sync browser conversations with Renard"
       }
     >
       <form onSubmit={onSubmit} className="space-y-4">
-        {/* Visual Indicator of what we are connecting */}
-        <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg border border-border mb-6">
-          <div className="p-2 bg-background rounded-md border border-border">
+        {/* Context Indicator */}
+        <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg border">
+          <div className="p-2 bg-background rounded-md border">
             {isCLI ? (
-              <Terminal className="w-4 h-4 text-foreground" />
+              <Terminal className="w-4 h-4" />
             ) : (
               <Globe className="w-4 h-4 text-orange-500" />
             )}
           </div>
           <div className="text-sm">
-            <p className="font-medium text-foreground">
-              {isCLI ? "Renard CLI v1.2" : "Chrome Extension"}
+            <p className="font-medium">
+              {isCLI ? "Renard CLI" : "Chrome Extension"}
             </p>
             <p className="text-xs text-muted-foreground">
               Requesting write access
@@ -98,53 +151,38 @@ export default function ExtensionLoginPage() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label
-            className="text-sm font-medium text-foreground"
-            htmlFor="email"
-          >
-            Email
-          </label>
+        {/* Email */}
+        <div>
+          <label className="text-sm font-medium">Email</label>
           <input
-            id="email"
             type="email"
-            placeholder="name@company.com"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary placeholder:text-muted-foreground text-foreground"
-            required
+            className="w-full h-9 px-3 rounded-md border"
           />
         </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <label
-              className="text-sm font-medium text-foreground"
-              htmlFor="password"
-            >
-              Password
-            </label>
-            <a href="#" className="text-xs text-primary hover:underline">
-              Forgot?
-            </a>
-          </div>
+        {/* Password */}
+        <div>
+          <label className="text-sm font-medium">Password</label>
           <input
-            id="password"
             type="password"
-            placeholder="••••••••"
+            required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary placeholder:text-muted-foreground text-foreground"
-            required
+            className="w-full h-9 px-3 rounded-md border"
           />
         </div>
+
+        {error && <p className="text-sm text-red-500">{error}</p>}
 
         <button
           disabled={isLoading}
-          className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground h-9 px-4 py-2 hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="w-full h-9 bg-primary text-white rounded-md flex items-center justify-center"
         >
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Authorize Access
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          Authorize
         </button>
       </form>
 
