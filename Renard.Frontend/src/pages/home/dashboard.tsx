@@ -5,7 +5,6 @@ import {
   Terminal,
   Globe,
   Sparkles,
-  GitCommit,
   Clock,
 } from "lucide-react";
 
