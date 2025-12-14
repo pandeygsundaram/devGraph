@@ -7,7 +7,11 @@ dotenv.config();
 
 const app: Express = express();
 
-const allowedOrigins = ["https://renard.live", "https://www.renard.live" , "http://localhost:5173"];
+const allowedOrigins = [
+  "https://renard.live",
+  "https://www.renard.live",
+  "http://localhost:5173",
+];
 
 // Allow chrome-extension://<id>
 const isChromeExtension = (origin?: string) =>
@@ -16,19 +20,16 @@ const isChromeExtension = (origin?: string) =>
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow non-browser requests (curl, server, cron, etc.)
       if (!origin) {
         return callback(null, true);
       }
 
-      // Allow web app
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      // Allow Chrome extensions
       if (isChromeExtension(origin)) {
-        return callback(null, true);
+        return callback(null, true); // Make sure this is 'true', not 'origin'
       }
 
       return callback(new Error(`CORS blocked for origin: ${origin}`), false);
@@ -36,7 +37,6 @@ app.use(
     credentials: false,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-
   })
 );
 

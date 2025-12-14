@@ -1,12 +1,19 @@
+/* =====================
+   CONSTANTS
+===================== */
+
 const STORAGE_KEY = "ai_chat_messages_v1";
 const AUTH_KEY = "renard_auth";
 
 const API_BASE = "https://api.renard.live/api";
-const FLUSH_INTERVAL = 2 * 60 * 1000; // 15 minutes
+const FLUSH_INTERVAL = 2 * 60 * 1000; // 2 minutes
+const CHUNK_SIZE = 200; // 🔒 SAFE batch size
 
 console.log("[Renard] Background worker started");
 
-/* -------------------- MESSAGE HANDLING -------------------- */
+/* =====================
+   MESSAGE HANDLING
+===================== */
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "AUTH_LOGIN") {
@@ -41,7 +48,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-/* -------------------- AUTH HANDSHAKE -------------------- */
+/* =====================
+   AUTH HANDSHAKE
+===================== */
 
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   if (msg.type === "AUTH_SUCCESS" && msg.token && msg.team?.id) {
@@ -49,7 +58,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       {
         [AUTH_KEY]: {
           token: msg.token,
-          apiKey: msg.apiKey,
+          apiKey: msg.apiKey, // optional, not used for fetch
           user: msg.user,
           team: msg.team,
           loggedInAt: Date.now(),
@@ -74,7 +83,9 @@ function notifyAuth() {
   });
 }
 
-/* -------------------- STORAGE -------------------- */
+/* =====================
+   STORAGE
+===================== */
 
 function storeMessages(msg, sendResponse) {
   chrome.storage.local.get(STORAGE_KEY, (res) => {
@@ -93,7 +104,9 @@ function storeMessages(msg, sendResponse) {
   });
 }
 
-/* -------------------- FLUSH PIPELINE -------------------- */
+/* =====================
+   FLUSH PIPELINE
+===================== */
 
 async function flushToServer() {
   chrome.storage.local.get([STORAGE_KEY, AUTH_KEY], async (res) => {
@@ -105,9 +118,9 @@ async function flushToServer() {
       return;
     }
 
-    if (entries.length === 0) {
-      return;
-    }
+    if (entries.length === 0) return;
+
+    /* ---- Transform extension data → backend schema ---- */
 
     const messages = [];
 
@@ -115,7 +128,7 @@ async function flushToServer() {
       for (const m of entry.messages) {
         messages.push({
           activityType: "chat",
-          teamId: auth.team.id, // ✅ REQUIRED
+          teamId: auth.team.id,
           content: m.text,
           metadata: {
             source: "browser-extension",
@@ -132,20 +145,31 @@ async function flushToServer() {
     console.log(`[Renard] Flushing ${messages.length} messages`);
 
     try {
-      const res = await fetch(`${API_BASE}/messages/batch`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messages }),
-      });
+      /* ---- Upload in CHUNKS ---- */
 
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
+      for (let i = 0; i < messages.length; i += CHUNK_SIZE) {
+        const chunk = messages.slice(i, i + CHUNK_SIZE);
+
+        const res = await fetch(`${API_BASE}/messages/batch`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ messages: chunk }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        console.log(
+          `[Renard] Uploaded chunk ${i / CHUNK_SIZE + 1} (${chunk.length})`
+        );
       }
 
-      // ✅ Clear buffer ONLY after success
+      /* ---- Clear buffer ONLY after full success ---- */
+
       chrome.storage.local.set({ [STORAGE_KEY]: [] }, () => {
         console.log("[Renard] Flush successful, buffer cleared");
         chrome.runtime.sendMessage({ type: "STORAGE_UPDATED" });
@@ -156,9 +180,11 @@ async function flushToServer() {
   });
 }
 
-/* -------------------- SCHEDULER -------------------- */
+/* =====================
+   SCHEDULER
+===================== */
 
 setInterval(flushToServer, FLUSH_INTERVAL);
 
-// Flush once on startup (safe)
+// Flush once on startup
 flushToServer();
