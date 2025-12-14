@@ -289,13 +289,13 @@ export async function getKnowledgeGraph(
 
     // Process each activity
     for (const point of points) {
-      const text = (point.payload?.text || '').toLowerCase();
+      const text = ((point.payload?.text as string) || '').toLowerCase();
 
       // Extract words (simple tokenization)
       const words = text
         .replace(/[^\w\s]/g, ' ')
         .split(/\s+/)
-        .filter(word =>
+        .filter((word: string) =>
           word.length > 3 &&
           !stopWords.has(word) &&
           !/^\d+$/.test(word)

@@ -26,11 +26,16 @@ export const register = async (req: Request<{}, {}, RegisterBody>, res: Response
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate API key
+    const apiKey = `key_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+    // Create user with API key
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
+        apiKey,
       },
       select: {
         id: true,
@@ -38,6 +43,26 @@ export const register = async (req: Request<{}, {}, RegisterBody>, res: Response
         name: true,
         role: true,
         createdAt: true,
+        apiKey: true,
+      },
+    });
+
+    // Auto-create personal team for individual users
+    const team = await prisma.team.create({
+      data: {
+        name: `${name}'s Workspace`,
+        description: 'Personal workspace',
+        type: 'PERSONAL',
+        isActive: true,
+      },
+    });
+
+    // Add user as team owner
+    await prisma.teamMember.create({
+      data: {
+        userId: user.id,
+        teamId: team.id,
+        role: 'OWNER',
       },
     });
 
@@ -51,6 +76,11 @@ export const register = async (req: Request<{}, {}, RegisterBody>, res: Response
       message: 'User registered successfully',
       user,
       token,
+      apiKey: user.apiKey,
+      team: {
+        id: team.id,
+        name: team.name,
+      },
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -84,6 +114,15 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response): Pro
       return;
     }
 
+    // Get user's primary team
+    const teamMembership = await prisma.teamMember.findFirst({
+      where: { userId: user.id },
+      include: {
+        team: true,
+      },
+      orderBy: { joinedAt: 'asc' },
+    });
+
     const token = generateToken({
       id: user.id,
       email: user.email,
@@ -99,6 +138,11 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response): Pro
         role: user.role,
       },
       token,
+      apiKey: user.apiKey,
+      team: teamMembership?.team ? {
+        id: teamMembership.team.id,
+        name: teamMembership.team.name,
+      } : null,
     });
   } catch (error) {
     console.error('Login error:', error);
