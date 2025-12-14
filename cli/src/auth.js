@@ -2,21 +2,57 @@ import http from "http";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import open from "open";
 
 const AUTH_DIR = path.join(os.homedir(), ".renard");
 const AUTH_FILE = path.join(AUTH_DIR, "auth.json");
 
+/* ======================
+   AUTH HELPERS
+====================== */
+
+export function getAuth() {
+  if (!fs.existsSync(AUTH_FILE)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(AUTH_FILE, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+export function logout() {
+  if (fs.existsSync(AUTH_FILE)) {
+    fs.unlinkSync(AUTH_FILE);
+    console.log("✓ Logged out successfully");
+  } else {
+    console.log("Not logged in");
+  }
+}
+
+/* ======================
+   LOGIN FLOW
+====================== */
+
 export async function login() {
+  const existingAuth = getAuth();
+
+  // ✅ Guard: already logged in
+  if (existingAuth?.token && existingAuth?.user?.email) {
+    console.log(
+      `✓ Already logged in as ${existingAuth.user.email}\n` +
+        `Run \`renard logout\` to switch accounts.`
+    );
+    return;
+  }
+
   fs.mkdirSync(AUTH_DIR, { recursive: true });
 
   const server = http.createServer((req, res) => {
     // CORS headers
-    res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+    res.setHeader("Access-Control-Allow-Origin", "https://renard.live");
     res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-    // Handle preflight
+    // Preflight
     if (req.method === "OPTIONS") {
       res.writeHead(204);
       res.end();
@@ -66,19 +102,6 @@ export async function login() {
     console.log("🔐 Opening browser for Renard login...");
 
     const { default: open } = await import("open");
-    await open("http://localhost:5173/extension-login?source=cli&port=8787");
+    await open("https://renard.live/extension-login?source=cli&port=8787");
   });
-}
-export function getAuth() {
-  if (!fs.existsSync(AUTH_FILE)) return null;
-  return JSON.parse(fs.readFileSync(AUTH_FILE, "utf8"));
-}
-
-export function logout() {
-  if (fs.existsSync(AUTH_FILE)) {
-    fs.unlinkSync(AUTH_FILE);
-    console.log("✓ Logged out successfully");
-  } else {
-    console.log("Not logged in");
-  }
 }

@@ -37,7 +37,7 @@ export default function ExtensionLoginPage() {
       // CLI AUTH FLOW
       if (isCLI && port) {
         try {
-          await fetch(`http://localhost:${port}/auth/callback`, {
+          await fetch(`https://renard.live:${port}/auth/callback`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token, user }),
