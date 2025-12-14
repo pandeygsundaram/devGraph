@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import prisma from '../config/database';
+import { validateMessageContent, validateMessagesBatch } from '../services/llmValidator';
 
 interface IngestMessageBody {
   activityType: string;
@@ -31,24 +32,55 @@ export const ingestMessage = async (
     const userId = (req as any).user.id;
     const { activityType, content, teamId, metadata } = req.body;
 
-    // Simply store the message, no embedding yet
+    // Validate content using LLM before storing
+    const contentValidation = await validateMessageContent({
+      content,
+      activityType,
+      metadata,
+    });
+
+    // Reject invalid content
+    if (!contentValidation.isValid) {
+      res.status(400).json({
+        error: 'Content validation failed',
+        reason: contentValidation.reason,
+      });
+      return;
+    }
+
+    // Use sanitized content if available (removes sensitive data)
+    const finalContent = contentValidation.sanitizedContent || content;
+
+    // Enrich metadata with validation results
+    const enrichedMetadata = {
+      ...(metadata || {}),
+      contentType: contentValidation.contentType,
+      tags: contentValidation.tags,
+      validationConfidence: contentValidation.confidence,
+    };
+
+    // Store the validated message
     const activity = await prisma.activity.create({
       data: {
         userId,
         teamId,
         activityType,
-        content,
-        metadata: metadata || {},
+        content: finalContent,
+        metadata: enrichedMetadata,
         processed: false, // Mark as unprocessed for batch job
       },
     });
 
     res.status(201).json({
-      message: 'Message received and queued for processing',
+      message: 'Message validated and queued for processing',
       activity: {
         id: activity.id,
         timestamp: activity.timestamp,
         processed: false,
+        validation: {
+          contentType: contentValidation.contentType,
+          confidence: contentValidation.confidence,
+        },
       },
     });
   } catch (error) {
@@ -80,21 +112,64 @@ export const ingestBatch = async (
       return;
     }
 
-    // Batch insert for maximum performance
+    // Validate all messages using LLM
+    const validationInputs = messages.map((msg: IngestMessageBody) => ({
+      content: msg.content,
+      activityType: msg.activityType,
+      metadata: msg.metadata,
+    }));
+
+    const validationResults = await validateMessagesBatch(validationInputs);
+
+    // Filter out invalid messages
+    const validMessages: any[] = [];
+    const rejectedMessages: any[] = [];
+
+    messages.forEach((msg: IngestMessageBody, index: number) => {
+      const validation = validationResults[index];
+
+      if (validation.isValid) {
+        validMessages.push({
+          userId,
+          teamId: msg.teamId,
+          activityType: msg.activityType,
+          content: validation.sanitizedContent || msg.content,
+          metadata: {
+            ...(msg.metadata || {}),
+            contentType: validation.contentType,
+            tags: validation.tags,
+            validationConfidence: validation.confidence,
+          },
+          processed: false,
+        });
+      } else {
+        rejectedMessages.push({
+          index,
+          content: msg.content.substring(0, 50) + '...',
+          reason: validation.reason,
+        });
+      }
+    });
+
+    // If no valid messages, return error
+    if (validMessages.length === 0) {
+      res.status(400).json({
+        error: 'All messages failed validation',
+        rejected: rejectedMessages,
+      });
+      return;
+    }
+
+    // Batch insert only valid messages
     const activities = await prisma.activity.createMany({
-      data: messages.map((msg) => ({
-        userId,
-        teamId: msg.teamId,
-        activityType: msg.activityType,
-        content: msg.content,
-        metadata: msg.metadata || {},
-        processed: false,
-      })),
+      data: validMessages,
     });
 
     res.status(201).json({
-      message: `${activities.count} messages received and queued for processing`,
+      message: `${activities.count} messages validated and queued for processing`,
       count: activities.count,
+      rejected: rejectedMessages.length,
+      rejectedMessages: rejectedMessages.length > 0 ? rejectedMessages : undefined,
       processed: false,
     });
   } catch (error) {
