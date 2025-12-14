@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
-import { Brain, Loader2 } from "lucide-react";
+import { Brain, Loader2, RotateCw, ZoomIn, ZoomOut } from "lucide-react";
+import ForceGraph2D from "react-force-graph-2d";
 
 interface GraphNode {
   id: string;
   label: string;
   size: number;
   count: number;
+  color?: string;
   x?: number;
   y?: number;
+  vx?: number;
+  vy?: number;
 }
 
 interface GraphEdge {
@@ -28,6 +32,10 @@ export function KnowledgeGraph({ teamId, limit = 50 }: KnowledgeGraphProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [hoverNode, setHoverNode] = useState<GraphNode | null>(null);
+  const [highlightNodes, setHighlightNodes] = useState<Set<string>>(new Set());
+  const [highlightLinks, setHighlightLinks] = useState<Set<string>>(new Set());
+  const fgRef = useRef<any>(null);
 
   const API_URL = import.meta.env.VITE_SERVER;
 
@@ -45,7 +53,7 @@ export function KnowledgeGraph({ teamId, limit = 50 }: KnowledgeGraphProps) {
       params.append("limit", limit.toString());
 
       const response = await axios.get(
-        `${API_URL}/activity/knowledge-graph?${params.toString()}`,
+        `${API_URL}/activities/knowledge-graph?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -55,18 +63,22 @@ export function KnowledgeGraph({ teamId, limit = 50 }: KnowledgeGraphProps) {
 
       const graphData = response.data.graph;
 
-      // Position nodes in a circle for simple visualization
-      const positionedNodes = graphData.nodes.map((node: GraphNode, index: number) => {
-        const angle = (index / graphData.nodes.length) * 2 * Math.PI;
-        const radius = 200;
+      // Assign colors based on node importance
+      const maxCount = Math.max(...graphData.nodes.map((n: GraphNode) => n.count));
+      const coloredNodes = graphData.nodes.map((node: GraphNode) => {
+        const intensity = node.count / maxCount;
+        let color;
+        if (intensity > 0.7) color = "#8b5cf6"; // Purple for high importance
+        else if (intensity > 0.4) color = "#3b82f6"; // Blue for medium
+        else color = "#06b6d4"; // Cyan for low
+
         return {
           ...node,
-          x: 250 + radius * Math.cos(angle),
-          y: 250 + radius * Math.sin(angle),
+          color,
         };
       });
 
-      setNodes(positionedNodes);
+      setNodes(coloredNodes);
       setEdges(graphData.edges);
       setError("");
     } catch (err: any) {
@@ -74,6 +86,63 @@ export function KnowledgeGraph({ teamId, limit = 50 }: KnowledgeGraphProps) {
       setError("Failed to load knowledge graph");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleNodeClick = useCallback((node: any) => {
+    if (!node) return;
+    setSelectedNode(node);
+
+    // Center on node
+    if (fgRef.current) {
+      fgRef.current.centerAt(node.x, node.y, 1000);
+      fgRef.current.zoom(4, 1000);
+    }
+  }, []);
+
+  const handleNodeHover = useCallback((node: any) => {
+    setHoverNode(node || null);
+
+    if (node) {
+      // Highlight node and connected nodes
+      const connectedNodes = new Set<string>();
+      const connectedLinks = new Set<string>();
+
+      connectedNodes.add(node.id);
+
+      edges.forEach(link => {
+        if (link.source === node.id || link.target === node.id) {
+          connectedLinks.add(`${link.source}-${link.target}`);
+          connectedNodes.add(typeof link.source === 'object' ? (link.source as any).id : link.source);
+          connectedNodes.add(typeof link.target === 'object' ? (link.target as any).id : link.target);
+        }
+      });
+
+      setHighlightNodes(connectedNodes);
+      setHighlightLinks(connectedLinks);
+    } else {
+      setHighlightNodes(new Set());
+      setHighlightLinks(new Set());
+    }
+  }, [edges]);
+
+  const resetCamera = () => {
+    if (fgRef.current) {
+      fgRef.current.zoomToFit(400);
+    }
+  };
+
+  const zoomIn = () => {
+    if (fgRef.current) {
+      const currentZoom = fgRef.current.zoom();
+      fgRef.current.zoom(currentZoom * 1.5, 300);
+    }
+  };
+
+  const zoomOut = () => {
+    if (fgRef.current) {
+      const currentZoom = fgRef.current.zoom();
+      fgRef.current.zoom(currentZoom / 1.5, 300);
     }
   };
 
@@ -108,6 +177,15 @@ export function KnowledgeGraph({ teamId, limit = 50 }: KnowledgeGraphProps) {
     );
   }
 
+  const graphData = {
+    nodes: nodes,
+    links: edges.map(edge => ({
+      source: edge.source,
+      target: edge.target,
+      value: edge.weight,
+    })),
+  };
+
   return (
     <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
@@ -115,94 +193,150 @@ export function KnowledgeGraph({ teamId, limit = 50 }: KnowledgeGraphProps) {
           <Brain className="w-5 h-5 text-primary" />
           <h3 className="font-semibold text-foreground">Knowledge Graph</h3>
         </div>
-        <div className="text-sm text-muted-foreground">
-          {nodes.length} topics · {edges.length} connections
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            {nodes.length} topics · {edges.length} connections
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={zoomIn}
+              className="p-2 hover:bg-secondary rounded-lg transition-colors"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <button
+              onClick={zoomOut}
+              className="p-2 hover:bg-secondary rounded-lg transition-colors"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <button
+              onClick={resetCamera}
+              className="p-2 hover:bg-secondary rounded-lg transition-colors"
+              title="Reset View"
+            >
+              <RotateCw className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="relative">
-        {/* SVG Graph Visualization */}
-        <svg
-          width="100%"
-          height="500"
-          viewBox="0 0 500 500"
-          className="bg-secondary/20 rounded-lg"
-        >
-          {/* Render edges */}
-          <g className="edges">
-            {edges.map((edge, index) => {
-              const sourceNode = nodes.find((n) => n.id === edge.source);
-              const targetNode = nodes.find((n) => n.id === edge.target);
+      {/* Interactive Force Graph */}
+      <div className="relative rounded-lg overflow-hidden bg-gradient-to-br from-slate-950 to-slate-900 border border-border">
+        <ForceGraph2D
+          ref={fgRef}
+          graphData={graphData}
+          nodeLabel="label"
+          nodeVal={(node: any) => Math.max(8, node.count * 3)}
+          nodeColor={(node: any) =>
+            highlightNodes.size > 0 && !highlightNodes.has(node.id)
+              ? 'rgba(100, 100, 100, 0.3)'
+              : node.color
+          }
+          nodeRelSize={8}
+          nodeCanvasObject={(node: any, ctx, globalScale) => {
+            const label = node.label;
+            const fontSize = 12 / globalScale;
+            const nodeRadius = Math.max(8, node.count * 2);
+            const isHighlighted = highlightNodes.has(node.id);
 
-              if (!sourceNode || !targetNode) return null;
+            // Draw node circle
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = isHighlighted || highlightNodes.size === 0
+              ? node.color
+              : 'rgba(100, 100, 100, 0.3)';
+            ctx.fill();
 
-              return (
-                <line
-                  key={index}
-                  x1={sourceNode.x}
-                  y1={sourceNode.y}
-                  x2={targetNode.x}
-                  y2={targetNode.y}
-                  stroke="hsl(var(--muted-foreground))"
-                  strokeWidth={Math.max(1, edge.weight / 3)}
-                  opacity={0.3}
-                />
-              );
-            })}
-          </g>
+            // Draw highlight ring if selected or hovered
+            if (isHighlighted || node.id === selectedNode?.id) {
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, nodeRadius + 2, 0, 2 * Math.PI);
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 2 / globalScale;
+              ctx.stroke();
+            }
 
-          {/* Render nodes */}
-          <g className="nodes">
-            {nodes.map((node) => (
-              <g
-                key={node.id}
-                transform={`translate(${node.x}, ${node.y})`}
-                className="cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setSelectedNode(node)}
-              >
-                <circle
-                  r={Math.max(8, Math.min(25, node.size / 2))}
-                  fill="hsl(var(--primary))"
-                  opacity={selectedNode?.id === node.id ? 1 : 0.7}
-                />
-                <text
-                  textAnchor="middle"
-                  dy=".3em"
-                  fontSize="10"
-                  fill="hsl(var(--primary-foreground))"
-                  className="font-medium pointer-events-none select-none"
-                >
-                  {node.label.length > 8
-                    ? node.label.substring(0, 6) + "..."
-                    : node.label}
-                </text>
-              </g>
-            ))}
-          </g>
-        </svg>
+            // Draw label
+            ctx.font = `${fontSize}px Sans-Serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(label, node.x, node.y + nodeRadius + fontSize);
+          }}
+          linkColor={(link: any) => {
+            const linkId = `${link.source.id || link.source}-${link.target.id || link.target}`;
+            return highlightLinks.size > 0 && !highlightLinks.has(linkId)
+              ? 'rgba(100, 100, 100, 0.1)'
+              : 'rgba(150, 150, 150, 0.5)';
+          }}
+          linkWidth={(link: any) => {
+            const linkId = `${link.source.id || link.source}-${link.target.id || link.target}`;
+            return highlightLinks.has(linkId) ? 2 : Math.max(0.5, link.value / 5);
+          }}
+          linkDirectionalParticles={(link: any) => {
+            const linkId = `${link.source.id || link.source}-${link.target.id || link.target}`;
+            return highlightLinks.has(linkId) ? 4 : Math.max(0, link.value / 10);
+          }}
+          linkDirectionalParticleWidth={2}
+          linkDirectionalParticleSpeed={0.006}
+          onNodeClick={handleNodeClick}
+          onNodeHover={handleNodeHover}
+          enableNodeDrag={true}
+          enableZoomInteraction={true}
+          enablePanInteraction={true}
+          cooldownTime={3000}
+          d3AlphaDecay={0.02}
+          d3VelocityDecay={0.3}
+          backgroundColor="rgba(0,0,0,0)"
+          width={1000}
+          height={600}
+        />
 
-        {/* Selected node info */}
-        {selectedNode && (
-          <div className="mt-4 p-4 bg-secondary/50 rounded-lg border border-border">
-            <div className="flex items-start justify-between">
-              <div>
-                <h4 className="font-semibold text-foreground capitalize">
-                  {selectedNode.label}
-                </h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Mentioned {selectedNode.count} times in your activities
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedNode(null)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                ×
-              </button>
-            </div>
+        {/* Hover tooltip */}
+        {hoverNode && (
+          <div className="absolute top-4 left-4 bg-popover/95 text-popover-foreground px-4 py-2 rounded-lg shadow-lg border border-border pointer-events-none">
+            <h4 className="font-semibold capitalize">{hoverNode.label}</h4>
+            <p className="text-sm text-muted-foreground">
+              {hoverNode.count} mentions
+            </p>
           </div>
         )}
+
+        {/* Instructions overlay */}
+        <div className="absolute bottom-4 left-4 bg-popover/90 text-popover-foreground px-3 py-2 rounded-lg text-xs pointer-events-none">
+          <p>🖱️ Drag to pan • Scroll to zoom • Click nodes to focus • Drag nodes to rearrange</p>
+        </div>
       </div>
+
+      {/* Selected node info */}
+      {selectedNode && (
+        <div className="mt-4 p-4 bg-secondary/50 rounded-lg border border-border">
+          <div className="flex items-start justify-between">
+            <div>
+              <h4 className="font-semibold text-foreground capitalize">
+                {selectedNode.label}
+              </h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                Mentioned {selectedNode.count} times in your activities
+              </p>
+              <div
+                className="mt-2 w-4 h-4 rounded-full"
+                style={{ backgroundColor: selectedNode.color }}
+                title="Node color"
+              />
+            </div>
+            <button
+              onClick={() => setSelectedNode(null)}
+              className="text-muted-foreground hover:text-foreground text-xl font-bold px-2"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Top topics list */}
       <div className="mt-6">
@@ -213,12 +347,18 @@ export function KnowledgeGraph({ teamId, limit = 50 }: KnowledgeGraphProps) {
           {nodes.slice(0, 12).map((node) => (
             <div
               key={node.id}
-              className="flex items-center justify-between px-3 py-2 bg-secondary/50 rounded-md hover:bg-secondary transition-colors cursor-pointer"
-              onClick={() => setSelectedNode(node)}
+              className="flex items-center justify-between px-3 py-2 bg-secondary/50 rounded-md hover:bg-secondary transition-colors cursor-pointer group"
+              onClick={() => handleNodeClick(node)}
             >
-              <span className="text-sm text-foreground capitalize truncate">
-                {node.label}
-              </span>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: node.color }}
+                />
+                <span className="text-sm text-foreground capitalize truncate group-hover:text-primary transition-colors">
+                  {node.label}
+                </span>
+              </div>
               <span className="text-xs text-muted-foreground ml-2">
                 {node.count}
               </span>

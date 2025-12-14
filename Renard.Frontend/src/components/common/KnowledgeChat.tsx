@@ -35,8 +35,9 @@ export function KnowledgeChat({ teamId }: KnowledgeChatProps) {
     try {
       const token = localStorage.getItem("token");
 
+      // Use the new conversational chat endpoint with LLM
       const response = await axios.get(
-        `${API_URL}/activity/search?query=${encodeURIComponent(input)}${
+        `${API_URL}/activities/chat?query=${encodeURIComponent(input)}${
           teamId ? `&teamId=${teamId}` : ""
         }`,
         {
@@ -46,28 +47,9 @@ export function KnowledgeChat({ teamId }: KnowledgeChatProps) {
         }
       );
 
-      const results = response.data.results || [];
-
-      let assistantContent = "";
-      if (results.length === 0) {
-        assistantContent = "I couldn't find any activities related to your query.";
-      } else {
-        assistantContent = `I found ${results.length} relevant activities:\n\n`;
-        results.slice(0, 3).forEach((result: any, index: number) => {
-          const activity = result.activity;
-          if (activity) {
-            assistantContent += `${index + 1}. ${activity.activityType}: ${
-              activity.content.length > 100
-                ? activity.content.substring(0, 100) + "..."
-                : activity.content
-            }\n`;
-          }
-        });
-
-        if (results.length > 3) {
-          assistantContent += `\n...and ${results.length - 3} more results.`;
-        }
-      }
+      // The LLM generates a natural conversational response
+      const assistantContent = response.data.response ||
+        "I couldn't generate a response. Please try again.";
 
       const assistantMessage: Message = {
         role: "assistant",
@@ -77,10 +59,10 @@ export function KnowledgeChat({ teamId }: KnowledgeChatProps) {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error("Error searching:", error);
+      console.error("Error in chat:", error);
       const errorMessage: Message = {
         role: "assistant",
-        content: "Sorry, I encountered an error while searching. Please try again.",
+        content: "Sorry, I encountered an error while processing your question. Please try again.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);

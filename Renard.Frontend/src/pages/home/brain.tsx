@@ -2,8 +2,19 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { KnowledgeGraph } from "@/components/common/KnowledgeGraph";
 import { KnowledgeChat } from "@/components/common/KnowledgeChat";
 import { Brain } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function BrainPage() {
+  const [teamId, setTeamId] = useState<string>("");
+
+  useEffect(() => {
+    const teamData = localStorage.getItem("team");
+    if (teamData) {
+      const team = JSON.parse(teamData);
+      setTeamId(team.id);
+    }
+  }, []);
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -23,12 +34,12 @@ export default function BrainPage() {
 
       {/* Knowledge Graph */}
       <div className="mb-8">
-        <KnowledgeGraph />
+        <KnowledgeGraph teamId={teamId} />
       </div>
 
       {/* Chat Interface */}
       <div>
-        <KnowledgeChat />
+        <KnowledgeChat teamId={teamId} />
       </div>
     </DashboardLayout>
   );

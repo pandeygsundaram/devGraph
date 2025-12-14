@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import prisma from '../config/database';
 import { validateMessageContent, validateMessagesBatch } from '../services/llmValidator';
+import { processPendingActivities } from '../services/batchProcessor';
 
 interface IngestMessageBody {
   activityType: string;
@@ -71,8 +72,13 @@ export const ingestMessage = async (
       },
     });
 
+    // Auto-process in background (don't wait for completion)
+    processPendingActivities(100, 10000).catch((error) => {
+      console.error('[Auto-Process] Background processing failed:', error);
+    });
+
     res.status(201).json({
-      message: 'Message validated and queued for processing',
+      message: 'Message validated and processing started',
       activity: {
         id: activity.id,
         timestamp: activity.timestamp,
@@ -165,12 +171,17 @@ export const ingestBatch = async (
       data: validMessages,
     });
 
+    // Auto-process in background (don't wait for completion)
+    processPendingActivities(100, 10000).catch((error) => {
+      console.error('[Auto-Process] Background processing failed:', error);
+    });
+
     res.status(201).json({
-      message: `${activities.count} messages validated and queued for processing`,
+      message: `${activities.count} messages validated and processing started`,
       count: activities.count,
       rejected: rejectedMessages.length,
       rejectedMessages: rejectedMessages.length > 0 ? rejectedMessages : undefined,
-      processed: false,
+      processing: true,
     });
   } catch (error) {
     console.error('Ingest batch error:', error);

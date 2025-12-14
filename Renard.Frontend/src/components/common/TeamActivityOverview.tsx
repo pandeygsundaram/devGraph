@@ -51,7 +51,7 @@ export function TeamActivityOverview({
       if (endDate) params.append("endDate", endDate);
 
       const response = await axios.get(
-        `${API_URL}/activity/team/${teamId}/members?${params.toString()}`,
+        `${API_URL}/activities/team/${teamId}/members?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

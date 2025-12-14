@@ -9,6 +9,7 @@ import {
   getTeamMembersActivity,
   queryMemberWork,
   getActivityKnowledgeGraph,
+  chatWithActivities,
 } from '../controllers/activityController';
 import { authenticate } from '../middleware/auth';
 
@@ -34,6 +35,9 @@ router.get('/', getActivities);
 
 // Search activities using semantic search
 router.get('/search', searchActivities);
+
+// Conversational chat with LLM about activities
+router.get('/chat', chatWithActivities);
 
 // Get knowledge graph of topics
 router.get('/knowledge-graph', getActivityKnowledgeGraph);

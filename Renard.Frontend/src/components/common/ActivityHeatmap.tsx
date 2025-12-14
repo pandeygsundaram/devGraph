@@ -45,7 +45,7 @@ export function ActivityHeatmap({
       if (endDate) params.append("endDate", endDate);
 
       const response = await axios.get(
-        `${API_URL}/activity/heatmap/${userId}?${params.toString()}`,
+        `${API_URL}/activities/heatmap/${userId}?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

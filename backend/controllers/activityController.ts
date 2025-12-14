@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import prisma from '../config/database';
 import { storeActivityVector, searchSimilarActivities, getKnowledgeGraph } from '../services/vectorService';
+import { generateConversationalResponse } from '../services/conversationalChat';
 
 interface CreateActivityBody {
   activityType: string;
@@ -566,6 +567,88 @@ export const getActivityKnowledgeGraph = async (req: Request, res: Response): Pr
     });
   } catch (error) {
     console.error('Get knowledge graph error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Conversational chat about user's work using LLM
+ * Performs semantic search and generates natural language responses
+ */
+export const chatWithActivities = async (
+  req: Request<{}, {}, {}, SearchActivitiesQuery>,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = (req as any).user.id;
+    const userName = (req as any).user.name;
+    const { query, limit = '10', teamId } = req.query;
+
+    if (!query) {
+      res.status(400).json({ error: 'Query parameter is required' });
+      return;
+    }
+
+    // Build filter for Qdrant
+    const filter: any = {
+      must: [
+        {
+          key: 'userId',
+          match: { value: userId },
+        },
+      ],
+    };
+
+    if (teamId) {
+      filter.must.push({
+        key: 'teamId',
+        match: { value: teamId },
+      });
+    }
+
+    // Search for relevant activities
+    const searchResults = await searchSimilarActivities(
+      query,
+      parseInt(limit),
+      filter
+    );
+
+    // Fetch full activity details from database
+    const activityIds = searchResults.map(r => r.id);
+    const activities = await prisma.activity.findMany({
+      where: {
+        id: { in: activityIds },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        timestamp: 'desc',
+      },
+    });
+
+    // Generate conversational response using LLM
+    const chatResponse = await generateConversationalResponse(
+      query,
+      activities,
+      userName
+    );
+
+    res.status(200).json({
+      query,
+      response: chatResponse.response,
+      hasResults: chatResponse.hasResults,
+      relevantActivities: chatResponse.relevantActivities,
+      activities: activities.slice(0, 5), // Include top 5 activities for reference
+    });
+  } catch (error) {
+    console.error('Chat with activities error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
