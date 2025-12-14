@@ -9,7 +9,61 @@ import { detectTool } from "./detect.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { sendSessionToServer } from "./sender.js";
+import { sendSessionToServer, sendClineBackup } from "./sender.js";
+
+/* =====================
+   CONSTANTS
+===================== */
+
+const SENT_SESSIONS_FILE = path.join(
+  os.homedir(),
+  ".renard",
+  "sent_sessions.json"
+);
+
+/* =====================
+   TRACKING HELPERS
+===================== */
+
+function ensureRenardDir() {
+  const dir = path.join(os.homedir(), ".renard");
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+function loadSentSessions() {
+  try {
+    ensureRenardDir();
+    if (!fs.existsSync(SENT_SESSIONS_FILE)) {
+      return new Set();
+    }
+    const data = JSON.parse(fs.readFileSync(SENT_SESSIONS_FILE, "utf8"));
+    return new Set(data);
+  } catch {
+    return new Set();
+  }
+}
+
+function markSessionAsSent(sessionId) {
+  try {
+    ensureRenardDir();
+    const sent = loadSentSessions();
+    sent.add(sessionId);
+    fs.writeFileSync(
+      SENT_SESSIONS_FILE,
+      JSON.stringify([...sent], null, 2),
+      "utf8"
+    );
+  } catch (e) {
+    console.error("[Renard] Failed to mark session as sent:", e.message);
+  }
+}
+
+function isSessionAlreadySent(sessionId) {
+  const sent = loadSentSessions();
+  return sent.has(sessionId);
+}
 
 /* =====================
    ENTRY
@@ -34,10 +88,12 @@ export function runTracked(cmd, args = []) {
           readGeminiHistory(sessionId);
           endSession(sessionId, code);
           await sendSessionToServer(sessionId);
+          markSessionAsSent(sessionId);
           process.exit(code || 0);
         } else {
           endSession(sessionId, code);
           await sendSessionToServer(sessionId);
+          markSessionAsSent(sessionId);
           process.exit(code || 0);
         }
       } catch (e) {
@@ -51,6 +107,7 @@ export function runTracked(cmd, args = []) {
     console.error("Error:", err.message);
     endSession(sessionId, 1);
     await sendSessionToServer(sessionId);
+    markSessionAsSent(sessionId);
     process.exit(1);
   });
 }
@@ -69,17 +126,96 @@ async function handleClaudeExit(sessionId, existingHistory, code) {
 
   if (newEntries.length > 0) {
     const latest = newEntries[newEntries.length - 1];
+
+    // Check if this Claude session was already sent
+    const claudeSessionKey = `claude_${latest.project}_${latest.sessionId}`;
+    if (isSessionAlreadySent(claudeSessionKey)) {
+      console.error(
+        `[Renard Debug] Skipping already-sent Claude session: ${claudeSessionKey}`
+      );
+      endSession(sessionId, code);
+      process.exit(code || 0);
+      return;
+    }
+
     readClaudeConversation(
       sessionId,
       latest.project,
       latest.sessionId,
       newEntries
     );
+
+    // ✅ Send Cline backup if it exists
+    await sendClineBackupIfExists(sessionId, latest.project);
+
+    markSessionAsSent(claudeSessionKey);
   }
 
   endSession(sessionId, code);
   await sendSessionToServer(sessionId);
+  markSessionAsSent(sessionId);
   process.exit(code || 0);
+}
+
+/* =====================
+   CLINE BACKUP HANDLER
+===================== */
+
+async function sendClineBackupIfExists(sessionId, projectPath) {
+  try {
+    // Try project directory first (where cline saves backups)
+    const backupsDir = path.join(projectPath, "cline-backups");
+
+    if (!fs.existsSync(backupsDir)) {
+      console.error(
+        "[Renard Debug] No cline-backups directory found in project:",
+        backupsDir
+      );
+      return;
+    }
+
+    // Find the most recent backup file
+    const files = fs
+      .readdirSync(backupsDir)
+      .filter((f) => f.startsWith("cline-backup-") && f.endsWith(".md"))
+      .map((f) => ({
+        name: f,
+        path: path.join(backupsDir, f),
+        mtime: fs.statSync(path.join(backupsDir, f)).mtime,
+      }))
+      .sort((a, b) => b.mtime - a.mtime);
+
+    if (files.length === 0) {
+      console.error("[Renard Debug] No cline backup files found");
+      return;
+    }
+
+    const latestBackup = files[0];
+
+    // Check if we've already sent this backup
+    const backupKey = `cline_backup_${latestBackup.name}`;
+    if (isSessionAlreadySent(backupKey)) {
+      console.error(
+        `[Renard Debug] Skipping already-sent backup: ${latestBackup.name}`
+      );
+      return;
+    }
+
+    console.error(`[Renard Debug] Found Cline backup: ${latestBackup.name}`);
+
+    const backupContent = fs.readFileSync(latestBackup.path, "utf8");
+
+    await sendClineBackup(
+      sessionId,
+      projectPath,
+      backupContent,
+      latestBackup.name
+    );
+
+    markSessionAsSent(backupKey);
+  } catch (e) {
+    console.error("[Renard Debug] Failed to send Cline backup:", e.message);
+  }
 }
 
 /* =====================
@@ -166,7 +302,7 @@ function readClaudeConversation(
 }
 
 /* =====================
-   GEMINI HISTORY (FIXED)
+   GEMINI HISTORY
 ===================== */
 
 function readGeminiHistory(sessionId) {
@@ -178,6 +314,14 @@ function readGeminiHistory(sessionId) {
 
     if (!sessionDir) {
       console.error("[Renard Debug] No valid Gemini conversation found");
+      return;
+    }
+
+    const geminiSessionKey = `gemini_${path.basename(sessionDir)}`;
+    if (isSessionAlreadySent(geminiSessionKey)) {
+      console.error(
+        `[Renard Debug] Skipping already-sent Gemini session: ${geminiSessionKey}`
+      );
       return;
     }
 
@@ -208,6 +352,7 @@ function readGeminiHistory(sessionId) {
     }
 
     logGeminiConversation(sessionId, logsData, chatData);
+    markSessionAsSent(geminiSessionKey);
   } catch (e) {
     console.error("[Renard Debug] Gemini error:", e.message);
   }
@@ -249,7 +394,7 @@ function findBestGeminiSessionDir(baseDir) {
             (m.content || m.text).length > 30
         )
       ) {
-        return dir.path; // ✅ REAL conversation
+        return dir.path;
       }
     } catch {}
   }

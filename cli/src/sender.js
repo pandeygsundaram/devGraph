@@ -48,7 +48,6 @@ export async function sendSessionToServer(sessionId) {
       teamId: auth.team.id,
       content: l.text.trim(),
 
-      // 🔒 SAFE metadata only
       metadata: {
         source: "cli",
         role: l.role === "assistant" ? "assistant" : "user",
@@ -93,6 +92,61 @@ export async function sendSessionToServer(sessionId) {
     console.log("[Renard] CLI messages uploaded successfully");
   } catch (err) {
     console.error("[Renard] Failed to upload CLI messages");
+    console.error(err.message);
+  }
+}
+
+/* =========================
+   SEND CLINE BACKUP FILE
+========================= */
+
+export async function sendClineBackup(
+  sessionId,
+  projectPath,
+  backupContent,
+  fileName
+) {
+  const auth = getAuth();
+
+  if (!auth?.token || !auth?.team?.id) {
+    console.log("[Renard] Not authenticated, skipping Cline backup upload");
+    return;
+  }
+
+  console.log(`[Renard] Uploading Cline backup: ${fileName}`);
+
+  try {
+    const message = {
+      activityType: "document",
+      teamId: auth.team.id,
+      content: backupContent,
+      metadata: {
+        source: "cli-cline-backup",
+        tool: "claude",
+        projectPath: projectPath,
+        fileName: fileName,
+        sessionId: sessionId,
+        capturedAt: new Date().toISOString(),
+      },
+    };
+
+    const res = await fetch(`${API_BASE}/messages/batch`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ messages: [message] }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`HTTP ${res.status}: ${body}`);
+    }
+
+    console.log(`[Renard] Cline backup uploaded successfully`);
+  } catch (err) {
+    console.error("[Renard] Failed to upload Cline backup");
     console.error(err.message);
   }
 }
