@@ -6,8 +6,8 @@ const STORAGE_KEY = "ai_chat_messages_v1";
 const AUTH_KEY = "renard_auth";
 
 const API_BASE = "https://api.renard.live/api";
-const FLUSH_INTERVAL = 2 * 60 * 1000; // 2 minutes
-const CHUNK_SIZE = 200; // 🔒 SAFE batch size
+const FLUSH_INTERVAL = 1 * 60 * 1000; // 2 minutes
+const CHUNK_SIZE = 50; // 🔒 SAFE batch size
 
 console.log("[Renard] Background worker started");
 
@@ -20,7 +20,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     chrome.tabs.create({
       url: "http://localhost:5173/extension-login?source=extension",
     });
-    return; 
+    return;
   }
 
   if (msg.type === "AUTH_LOGOUT") {

@@ -9,99 +9,109 @@ import { detectTool } from "./detect.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { sendSessionToServer } from "./sender.js";
+
+/* =====================
+   ENTRY
+===================== */
 
 export function runTracked(cmd, args = []) {
   const tool = detectTool(cmd) || "unknown";
-
-  // Get the starting timestamp and read current history
-  const startTime = Date.now();
   const existingHistory = tool === "claude" ? readHistoryIndex() : [];
-
   const sessionId = startSession(tool, cmd, args);
 
-  // Run the command with full passthrough
   const child = spawn(cmd, args, {
     stdio: "inherit",
     env: process.env,
   });
 
   child.on("exit", (code) => {
-    // After Claude Code exits, read new entries from history
-    if (tool === "claude") {
-      setTimeout(() => {
-        const newHistory = readHistoryIndex();
-        const newEntries = newHistory.slice(existingHistory.length);
-
-        console.error(
-          `\n[Renard Debug] Found ${newEntries.length} new history entries`
-        );
-
-        if (newEntries.length > 0) {
-          // Get the project and sessionId from the latest entry
-          const latestEntry = newEntries[newEntries.length - 1];
-          console.error(
-            `[Renard Debug] Latest entry project: ${latestEntry.project}`
-          );
-          console.error(
-            `[Renard Debug] Latest entry sessionId: ${latestEntry.sessionId}`
-          );
-          readClaudeConversation(
-            sessionId,
-            latestEntry.project,
-            latestEntry.sessionId,
-            newEntries
-          );
+    setTimeout(async () => {
+      try {
+        if (tool === "claude") {
+          await handleClaudeExit(sessionId, existingHistory, code);
+        } else if (tool === "gemini") {
+          readGeminiHistory(sessionId);
+          endSession(sessionId, code);
+          await sendSessionToServer(sessionId);
+          process.exit(code || 0);
+        } else {
+          endSession(sessionId, code);
+          await sendSessionToServer(sessionId);
+          process.exit(code || 0);
         }
-
-        endSession(sessionId, code);
-        process.exit(code || 0);
-      }, 500); // Small delay to ensure files are written
-    } else if (tool === "gemini") {
-      setTimeout(() => {
-        readGeminiHistory(sessionId);
-        endSession(sessionId, code);
-        process.exit(code || 0);
-      }, 500);
-    } else {
-      endSession(sessionId, code);
-      process.exit(code || 0);
-    }
+      } catch (e) {
+        console.error("[Renard] Fatal exit error:", e.message);
+        process.exit(code || 1);
+      }
+    }, 600);
   });
 
-  child.on("error", (err) => {
+  child.on("error", async (err) => {
     console.error("Error:", err.message);
     endSession(sessionId, 1);
+    await sendSessionToServer(sessionId);
     process.exit(1);
   });
 }
 
-// Read the history index
+/* =====================
+   CLAUDE EXIT HANDLER
+===================== */
+
+async function handleClaudeExit(sessionId, existingHistory, code) {
+  const newHistory = readHistoryIndex();
+  const newEntries = newHistory.slice(existingHistory.length);
+
+  console.error(
+    `[Renard Debug] Found ${newEntries.length} new Claude history entries`
+  );
+
+  if (newEntries.length > 0) {
+    const latest = newEntries[newEntries.length - 1];
+    readClaudeConversation(
+      sessionId,
+      latest.project,
+      latest.sessionId,
+      newEntries
+    );
+  }
+
+  endSession(sessionId, code);
+  await sendSessionToServer(sessionId);
+  process.exit(code || 0);
+}
+
+/* =====================
+   HISTORY HELPERS
+===================== */
+
 function readHistoryIndex() {
   try {
-    const historyPath = path.join(os.homedir(), ".claude", "history.jsonl");
+    const file = path.join(os.homedir(), ".claude", "history.jsonl");
+    if (!fs.existsSync(file)) return [];
 
-    if (!fs.existsSync(historyPath)) {
-      return [];
-    }
-
-    const content = fs.readFileSync(historyPath, "utf8");
-    return content
+    return fs
+      .readFileSync(file, "utf8")
       .trim()
       .split("\n")
-      .map((line) => {
+      .map((l) => {
         try {
-          return JSON.parse(line);
+          return JSON.parse(l);
         } catch {
           return null;
         }
       })
       .filter(Boolean);
-  } catch (e) {
+  } catch {
     return [];
   }
 }
 
-// Read a specific conversation from projects folder
+/* =====================
+   CLAUDE CONVERSATION
+===================== */
+
 function readClaudeConversation(
   renardSessionId,
   projectPath,
@@ -109,152 +119,140 @@ function readClaudeConversation(
   historyEntries
 ) {
   try {
-    // Convert project path to folder name (replace / with -)
-    // The folder name keeps the leading dash: /home/user -> -home-user
     const projectFolder = projectPath.replace(/\//g, "-");
-    const conversationDir = path.join(
-      os.homedir(),
-      ".claude",
-      "projects",
-      projectFolder
-    );
+    const dir = path.join(os.homedir(), ".claude", "projects", projectFolder);
 
-    console.error(
-      `[Renard Debug] Looking for conversation in: ${conversationDir}`
-    );
-
-    if (!fs.existsSync(conversationDir)) {
-      console.error(
-        `[Renard Debug] Directory not found, logging history entries only`
-      );
-      // Just log the history entries we have
+    if (!fs.existsSync(dir)) {
       logClaudeConversation(renardSessionId, historyEntries, []);
       return;
     }
 
-    // Find conversation file matching the session ID
-    const files = fs.readdirSync(conversationDir);
-    console.error(`[Renard Debug] Files in directory: ${files.join(", ")}`);
+    const files = fs.readdirSync(dir);
+    let file = files.find((f) => f.startsWith(claudeSessionId));
 
-    // Look for exact session ID match first
-    let conversationFile = files.find((f) => f.startsWith(claudeSessionId));
-
-    // If not found, try to get the most recently modified .jsonl file
-    if (!conversationFile) {
-      const jsonlFiles = files
+    if (!file) {
+      file = files
         .filter((f) => f.endsWith(".jsonl") && !f.startsWith("agent-"))
         .map((f) => ({
           name: f,
-          mtime: fs.statSync(path.join(conversationDir, f)).mtime,
+          mtime: fs.statSync(path.join(dir, f)).mtime,
         }))
-        .sort((a, b) => b.mtime - a.mtime);
-
-      if (jsonlFiles.length > 0) {
-        conversationFile = jsonlFiles[0].name;
-      }
+        .sort((a, b) => b.mtime - a.mtime)?.[0]?.name;
     }
 
-    console.error(
-      `[Renard Debug] Selected conversation file: ${conversationFile}`
-    );
-
-    if (!conversationFile) {
-      console.error(`[Renard Debug] No conversation file found`);
-      // Just log the history entries we have
+    if (!file) {
       logClaudeConversation(renardSessionId, historyEntries, []);
       return;
     }
 
-    // Read the conversation file
-    const conversationPath = path.join(conversationDir, conversationFile);
-    const conversationData = fs.readFileSync(conversationPath, "utf8");
-    const messages = conversationData
+    const messages = fs
+      .readFileSync(path.join(dir, file), "utf8")
       .trim()
       .split("\n")
-      .map((line) => {
+      .map((l) => {
         try {
-          return JSON.parse(line);
+          return JSON.parse(l);
         } catch {
           return null;
         }
       })
       .filter(Boolean);
 
-    console.error(
-      `[Renard Debug] Found ${messages.length} messages in conversation`
-    );
-
-    // Log the complete conversation
     logClaudeConversation(renardSessionId, historyEntries, messages);
   } catch (e) {
-    console.error(`[Renard Debug] Error: ${e.message}`);
-    // Fallback: just log the history entries
+    console.error("[Renard Debug] Claude parse error:", e.message);
     logClaudeConversation(renardSessionId, historyEntries, []);
   }
 }
 
-// Read Gemini's conversation history from ~/.gemini/tmp/
+/* =====================
+   GEMINI HISTORY (FIXED)
+===================== */
+
 function readGeminiHistory(sessionId) {
   try {
-    const homeDir = os.homedir();
-    const geminiTmpDir = path.join(homeDir, ".gemini", "tmp");
+    const baseDir = path.join(os.homedir(), ".gemini", "tmp");
+    if (!fs.existsSync(baseDir)) return;
 
-    if (!fs.existsSync(geminiTmpDir)) {
-      console.error(`[Renard Debug] Gemini tmp directory not found`);
+    const sessionDir = findBestGeminiSessionDir(baseDir);
+
+    if (!sessionDir) {
+      console.error("[Renard Debug] No valid Gemini conversation found");
       return;
     }
 
-    // Find the most recent directory (they're named with hashes)
-    const dirs = fs
-      .readdirSync(geminiTmpDir)
-      .filter((d) => {
-        const fullPath = path.join(geminiTmpDir, d);
-        return fs.statSync(fullPath).isDirectory() && d !== "bin";
-      })
-      .map((d) => ({
-        name: d,
-        path: path.join(geminiTmpDir, d),
-        mtime: fs.statSync(path.join(geminiTmpDir, d)).mtime,
-      }))
-      .sort((a, b) => b.mtime - a.mtime);
+    console.error(`[Renard Debug] Reading Gemini session from: ${sessionDir}`);
 
-    if (dirs.length === 0) {
-      console.error(`[Renard Debug] No Gemini session directories found`);
-      return;
-    }
+    const logsFile = path.join(sessionDir, "logs.json");
+    const chatsDir = path.join(sessionDir, "chats");
 
-    const latestDir = dirs[0].path;
-    console.error(`[Renard Debug] Reading Gemini history from: ${latestDir}`);
+    const logsData = fs.existsSync(logsFile)
+      ? JSON.parse(fs.readFileSync(logsFile, "utf8"))
+      : [];
 
-    // Read logs.json for user messages
-    const logsFile = path.join(latestDir, "logs.json");
-    if (fs.existsSync(logsFile)) {
-      const logsData = JSON.parse(fs.readFileSync(logsFile, "utf8"));
+    let chatData = [];
 
-      // Read chat files for assistant responses
-      const chatsDir = path.join(latestDir, "chats");
-      let chatData = [];
+    if (fs.existsSync(chatsDir)) {
+      const files = fs
+        .readdirSync(chatsDir)
+        .filter((f) => f.endsWith(".json"))
+        .map((f) => ({
+          path: path.join(chatsDir, f),
+          mtime: fs.statSync(path.join(chatsDir, f)).mtime,
+        }))
+        .sort((a, b) => b.mtime - a.mtime);
 
-      if (fs.existsSync(chatsDir)) {
-        const chatFiles = fs
-          .readdirSync(chatsDir)
-          .filter((f) => f.endsWith(".json"))
-          .map((f) => ({
-            name: f,
-            path: path.join(chatsDir, f),
-            mtime: fs.statSync(path.join(chatsDir, f)).mtime,
-          }))
-          .sort((a, b) => b.mtime - a.mtime);
-
-        if (chatFiles.length > 0) {
-          chatData = JSON.parse(fs.readFileSync(chatFiles[0].path, "utf8"));
-        }
+      if (files.length) {
+        chatData = JSON.parse(fs.readFileSync(files[0].path, "utf8"));
       }
-
-      // Import logger function
-      logGeminiConversation(sessionId, logsData, chatData);
     }
+
+    logGeminiConversation(sessionId, logsData, chatData);
   } catch (e) {
-    console.error(`[Renard Debug] Error reading Gemini history: ${e.message}`);
+    console.error("[Renard Debug] Gemini error:", e.message);
   }
+}
+
+/* =====================
+   GEMINI SESSION PICKER
+===================== */
+
+function findBestGeminiSessionDir(baseDir) {
+  const dirs = fs
+    .readdirSync(baseDir)
+    .map((d) => ({
+      name: d,
+      path: path.join(baseDir, d),
+      mtime: fs.statSync(path.join(baseDir, d)).mtime,
+    }))
+    .filter((d) => fs.statSync(d.path).isDirectory())
+    .sort((a, b) => b.mtime - a.mtime);
+
+  for (const dir of dirs) {
+    const chatsDir = path.join(dir.path, "chats");
+    if (!fs.existsSync(chatsDir)) continue;
+
+    const files = fs.readdirSync(chatsDir).filter((f) => f.endsWith(".json"));
+    if (!files.length) continue;
+
+    try {
+      const content = JSON.parse(
+        fs.readFileSync(path.join(chatsDir, files[0]), "utf8")
+      );
+
+      const msgs = content?.messages || content;
+      if (
+        Array.isArray(msgs) &&
+        msgs.some(
+          (m) =>
+            typeof (m.content || m.text) === "string" &&
+            (m.content || m.text).length > 30
+        )
+      ) {
+        return dir.path; // ✅ REAL conversation
+      }
+    } catch {}
+  }
+
+  return null;
 }
