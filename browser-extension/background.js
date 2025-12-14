@@ -1,68 +1,70 @@
-console.log("Background worker started");
-
-// Fixed storage key to match popup.js
 const STORAGE_KEY = "ai_chat_messages_v1";
+const AUTH_KEY = "renard_auth";
 
-// Listener
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  console.log("Background received message:", msg);
-
-  // Ping test
-  if (msg.ping === "hello") {
-    sendResponse({ ok: true, pong: "pong" });
-    return true;
+  if (msg.type === "AUTH_LOGIN") {
+    startLogin();
+    return;
   }
 
-  // Store messages
-  if (msg.type === "NEW_MESSAGES") {
-    chrome.storage.local.get([STORAGE_KEY], (res) => {
-      const existing = Array.isArray(res[STORAGE_KEY]) ? res[STORAGE_KEY] : [];
+  if (msg.type === "AUTH_LOGOUT") {
+    chrome.storage.local.remove(AUTH_KEY, notifyAuth);
+    return;
+  }
 
-      // Check if this is a duplicate of the last entry
-      const lastEntry = existing[existing.length - 1];
-      const isDuplicate =
-        lastEntry &&
-        lastEntry.site === msg.site &&
-        JSON.stringify(lastEntry.messages) === JSON.stringify(msg.messages);
-
-      if (!isDuplicate && msg.messages && msg.messages.length > 0) {
-        existing.push({
-          site: msg.site,
-          timestamp: Date.now(),
-          messages: msg.messages || [],
-        });
-
-        chrome.storage.local.set({ [STORAGE_KEY]: existing }, () => {
-          console.log("Messages stored:", existing.length);
-
-          // Notify popup if it's open
-          chrome.runtime.sendMessage({ type: "STORAGE_UPDATED" }).catch(() => {
-            // Popup might not be open, that's fine
-          });
-        });
-      }
+  if (msg.type === "AUTH_STATUS") {
+    chrome.storage.local.get(AUTH_KEY, (res) => {
+      sendResponse({ authenticated: !!res[AUTH_KEY] });
     });
-
-    sendResponse({ ok: true });
     return true;
   }
 
-  // Retrieve messages
+  if (msg.type === "NEW_MESSAGES") {
+    storeMessages(msg, sendResponse);
+    return true;
+  }
+
   if (msg.type === "GET_STORED") {
-    chrome.storage.local.get([STORAGE_KEY], (res) => {
+    chrome.storage.local.get(STORAGE_KEY, (res) => {
       sendResponse({ data: res[STORAGE_KEY] || [] });
     });
-
-    return true; // required for async response
-  }
-
-  // Clear messages
-  if (msg.type === "CLEAR_STORED") {
-    chrome.storage.local.set({ [STORAGE_KEY]: [] }, () => {
-      sendResponse({ ok: true });
-    });
     return true;
   }
-
-  return false;
 });
+
+function startLogin() {
+  chrome.tabs.create({
+    url: "https://auth.renard.ai/extension-login",
+  });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.runtime.onMessageExternal.addListener((msg) => {
+    if (msg.type === "AUTH_SUCCESS") {
+      chrome.storage.local.set({ [AUTH_KEY]: msg.token }, notifyAuth);
+    }
+  });
+});
+
+function notifyAuth() {
+  chrome.runtime.sendMessage({
+    type: "AUTH_UPDATED",
+    authenticated: true,
+  });
+}
+
+function storeMessages(msg, sendResponse) {
+  chrome.storage.local.get(STORAGE_KEY, (res) => {
+    const arr = res[STORAGE_KEY] || [];
+    arr.push({
+      site: msg.site,
+      timestamp: Date.now(),
+      messages: msg.messages,
+    });
+
+    chrome.storage.local.set({ [STORAGE_KEY]: arr }, () => {
+      chrome.runtime.sendMessage({ type: "STORAGE_UPDATED" });
+      sendResponse({ ok: true });
+    });
+  });
+}

@@ -1,70 +1,65 @@
-// popup/popup.js
 const STORAGE_KEY = "ai_chat_messages_v1";
+
 const listEl = document.getElementById("list");
-document.getElementById("refresh").addEventListener("click", load);
-document.getElementById("clear").addEventListener("click", clearStored);
+const statusEl = document.getElementById("authStatus");
+const loginBtn = document.getElementById("login");
+const logoutBtn = document.getElementById("logout");
 
-function render(entries) {
-  listEl.innerHTML = "";
-  if (!entries.length) {
-    listEl.innerHTML = "<div>No messages captured yet.</div>";
-    return;
-  }
-  // latest first
-  const arr = entries.slice().reverse();
-  for (const e of arr) {
-    const d = new Date(e.timestamp);
-    const container = document.createElement("div");
-    container.className = "entry";
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    meta.innerText = `${e.site} — ${d.toLocaleString()}`;
-    container.appendChild(meta);
-    for (const m of e.messages.slice().reverse()) {
-      const r = document.createElement("div");
-      r.innerHTML = `<span class="role">[${
-        m.role
-      }]</span><span class="text">${escapeHtml(m.text)}</span>`;
-      container.appendChild(r);
-    }
-    listEl.appendChild(container);
-  }
-}
+document.getElementById("refresh").onclick = load;
+document.getElementById("clear").onclick = clearStored;
 
-function escapeHtml(s) {
-  return s.replace(
-    /[&<>"'`]/g,
-    (c) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-        "`": "&#96;",
-      }[c])
-  );
+loginBtn.onclick = () => chrome.runtime.sendMessage({ type: "AUTH_LOGIN" });
+
+logoutBtn.onclick = () => chrome.runtime.sendMessage({ type: "AUTH_LOGOUT" });
+
+chrome.runtime.sendMessage({ type: "AUTH_STATUS" }, updateAuthUI);
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === "AUTH_UPDATED") updateAuthUI(msg);
+  if (msg.type === "STORAGE_UPDATED") load();
+});
+
+function updateAuthUI(resp) {
+  if (resp?.authenticated) {
+    statusEl.textContent = "Logged in";
+    loginBtn.style.display = "none";
+    logoutBtn.style.display = "inline-block";
+  } else {
+    statusEl.textContent = "Not logged in";
+    loginBtn.style.display = "inline-block";
+    logoutBtn.style.display = "none";
+  }
 }
 
 function load() {
   chrome.runtime.sendMessage({ type: "GET_STORED" }, (resp) => {
-    const data = (resp && resp.data) || [];
-    render(data);
+    render(resp?.data || []);
   });
 }
 
 function clearStored() {
-  const obj = {};
-  obj[STORAGE_KEY] = [];
-  chrome.storage.local.set(obj, () => load());
+  chrome.storage.local.set({ [STORAGE_KEY]: [] }, load);
 }
 
-// initial load
-load();
-
-// listen for updates while popup is open
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg?.type === "STORAGE_UPDATED") {
-    load();
+function render(entries) {
+  listEl.innerHTML = "";
+  if (!entries.length) {
+    listEl.textContent = "No messages captured yet.";
+    return;
   }
-});
+
+  for (const e of entries.slice().reverse()) {
+    const div = document.createElement("div");
+    div.innerHTML = `<b>${e.site}</b> — ${new Date(
+      e.timestamp
+    ).toLocaleString()}`;
+    for (const m of e.messages.slice().reverse()) {
+      const p = document.createElement("div");
+      p.textContent = `[${m.role}] ${m.text}`;
+      div.appendChild(p);
+    }
+    listEl.appendChild(div);
+  }
+}
+
+load();

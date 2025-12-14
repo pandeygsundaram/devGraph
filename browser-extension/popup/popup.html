@@ -2,49 +2,151 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>AI Chat Reader</title>
+    <title>Renard</title>
     <style>
+      /* Reset & Base Styles */
+      * {
+        box-sizing: border-box;
+      }
+
       body {
-        font-family: Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
         width: 420px;
         margin: 0;
-        padding: 12px;
+        padding: 20px;
+        background-color: #f8fafc; /* Light grey background */
+        color: #334155; /* Dark slate text */
       }
+
+      /* Header Styling */
       h2 {
         margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 24px;
+        font-weight: 700;
+        color: #ea580c; /* Fox Orange */
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
-      .entry {
-        padding: 8px;
-        border-bottom: 1px solid #eee;
+
+      /* Auth Section Card */
+      .auth {
+        background: white;
+        padding: 16px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: none; /* Removed original border */
       }
-      .meta {
-        font-size: 12px;
-        color: #666;
-        margin-bottom: 6px;
+
+      .status {
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748b;
       }
-      .role {
-        font-weight: 600;
-        margin-right: 8px;
-      }
-      .text {
-        white-space: pre-wrap;
-      }
-      .controls {
-        margin-bottom: 8px;
-      }
-      button {
-        padding: 6px 10px;
+
+      /* Status indicator dot */
+      .status::before {
+        content: "";
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background-color: #cbd5e1;
+        border-radius: 50%;
         margin-right: 6px;
+      }
+
+      /* Control Section */
+      .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      /* Button Styles */
+      button {
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      /* Primary Button (Login) */
+      #login {
+        background-color: #ea580c;
+        color: white;
+      }
+      #login:hover {
+        background-color: #c2410c;
+      }
+
+      /* Secondary Button (Logout/Refresh) */
+      #logout,
+      #refresh {
+        background-color: #e2e8f0;
+        color: #475569;
+      }
+      #logout:hover,
+      #refresh:hover {
+        background-color: #cbd5e1;
+      }
+
+      /* Danger/Ghost Button (Clear) */
+      #clear {
+        background-color: transparent;
+        border: 1px solid #ef4444;
+        color: #ef4444;
+        margin-left: auto; /* Pushes it to the right */
+      }
+      #clear:hover {
+        background-color: #fef2f2;
+      }
+
+      /* List Container Placeholder Styling */
+      #list {
+        background: white;
+        min-height: 100px;
+        border-radius: 8px;
+        border: 1px dashed #cbd5e1;
+        padding: 12px;
+        /* Simulated empty state for visual reference */
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* Example item style (for when JS adds items) */
+      .list-item {
+        padding: 10px;
+        border-bottom: 1px solid #f1f5f9;
       }
     </style>
   </head>
+
   <body>
-    <h2>AI Chat Reader</h2>
+    <h2>🦊 Renard</h2>
+
+    <div class="auth">
+      <div class="status" id="authStatus">Checking auth…</div>
+      <div>
+        <button id="login">Login</button>
+        <button id="logout" style="display: none">Logout</button>
+      </div>
+    </div>
+
     <div class="controls">
       <button id="refresh">Refresh</button>
       <button id="clear">Clear Stored</button>
     </div>
+
     <div id="list"></div>
 
     <script src="popup.js"></script>
