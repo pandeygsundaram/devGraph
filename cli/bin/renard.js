@@ -6,6 +6,7 @@ import { clearLogs } from "../src/logger.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { login, logout } from "../src/auth.js";
 
 const program = new Command();
 
@@ -127,6 +128,9 @@ program
       console.log("No logs to clear");
     }
   });
+program.command("login").description("Authenticate Renard CLI").action(login);
+
+program.command("logout").description("Logout Renard CLI").action(logout);
 
 function printBanner() {
   console.log(`

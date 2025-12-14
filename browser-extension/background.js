@@ -4,7 +4,7 @@ const AUTH_KEY = "renard_auth";
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "AUTH_LOGIN") {
     chrome.tabs.create({
-      url: "http://localhost:5173/extension-login?source=extension",
+      url: "https://renard.live/extension-login?source=extension",
     });
     return;
   }
