@@ -14,6 +14,7 @@
     "storage",
     "activeTab",
     "tabs",
+    "<all_urls>",
     "https://chatgpt.com/*",
     "https://www.chatgpt.com/*",
     "https://chat.openai.com/*",
@@ -24,8 +25,7 @@
   ],
 
   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
+    "scripts": ["background.js"]
   },
 
   "browser_action": {
@@ -61,12 +61,20 @@
       ],
       "js": ["content/content-script.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["http://localhost:5173/*"],
+      "js": ["content/login-bridge.js"],
+      "run_at": "document_end",
+      "all_frames": false
     }
   ],
 
   "web_accessible_resources": ["inject.js"],
 
-  "externally_connectable": {
-    "matches": ["http://localhost:5173/*"]
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "renard@renard.live"
+    }
   }
 }

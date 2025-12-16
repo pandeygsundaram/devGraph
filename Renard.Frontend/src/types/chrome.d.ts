@@ -7,8 +7,11 @@ declare global {
         sendMessage: (
           extensionId: string,
           message: any,
-          callback?: () => void
+          callback?: (response: any) => void
         ) => void;
+        lastError?: {
+          message?: string;
+        };
       };
     };
   }

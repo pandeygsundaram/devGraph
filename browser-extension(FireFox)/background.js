@@ -17,9 +17,43 @@ console.log("[Renard] Background worker started");
 
 browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "AUTH_LOGIN") {
-    browser.tabs.create({
-      url: "https://renard.live/extension-login?source=extension",
-    });
+    browser.tabs
+      .create({
+        url: "http://localhost:5173/extension-login?source=extension",
+      })
+      .then((tab) => {
+        // Inject the bridge script after tab opens
+        setTimeout(() => {
+          browser.tabs
+            .executeScript(tab.id, {
+              code: `
+            console.log("[Renard] Bridge injected");
+            window.addEventListener("message", (event) => {
+              if (event.data.type === "RENARD_AUTH_REQUEST") {
+                console.log("[Renard Bridge] Got auth request, forwarding...");
+                browser.runtime.sendMessage({
+                  type: "AUTH_SUCCESS",
+                  token: event.data.token,
+                  apiKey: event.data.apiKey,
+                  user: event.data.user,
+                  team: event.data.team,
+                }).then(() => {
+                  console.log("[Renard Bridge] Message sent successfully");
+                  window.postMessage({ type: "RENARD_AUTH_SUCCESS" }, "*");
+                }).catch((err) => {
+                  console.error("[Renard Bridge] Error sending message:", err);
+                  window.postMessage({ type: "RENARD_AUTH_ERROR", error: err.message }, "*");
+                });
+              }
+            });
+            window.postMessage({ type: "RENARD_EXTENSION_READY" }, "*");
+          `,
+            })
+            .catch((err) =>
+              console.error("[Renard] Failed to inject bridge:", err)
+            );
+        }, 500);
+      });
     return;
   }
 
@@ -33,6 +67,28 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       sendResponse({ authenticated: !!res[AUTH_KEY] });
     });
     return true;
+  }
+
+  // 🔥 CRITICAL: Handle AUTH_SUCCESS from injected script
+  if (msg.type === "AUTH_SUCCESS" && msg.token && msg.team?.id) {
+    console.log("[Renard] Received AUTH_SUCCESS, storing...", msg.team.id);
+    browser.storage.local.set(
+      {
+        [AUTH_KEY]: {
+          token: msg.token,
+          apiKey: msg.apiKey,
+          user: msg.user,
+          team: msg.team,
+          loggedInAt: Date.now(),
+        },
+      },
+      () => {
+        console.log("[Renard] Auth stored successfully for team:", msg.team.id);
+        notifyAuth();
+        sendResponse({ ok: true });
+      }
+    );
+    return true; // Keep channel open for async response
   }
 
   if (msg.type === "NEW_MESSAGES") {
@@ -49,16 +105,20 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 /* =====================
-   AUTH HANDSHAKE
+   AUTH HANDSHAKE (External - for Chrome compatibility)
 ===================== */
 
 browser.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   if (msg.type === "AUTH_SUCCESS" && msg.token && msg.team?.id) {
+    console.log(
+      "[Renard] Received AUTH_SUCCESS externally, storing...",
+      msg.team.id
+    );
     browser.storage.local.set(
       {
         [AUTH_KEY]: {
           token: msg.token,
-          apiKey: msg.apiKey, // optional, not used for fetch
+          apiKey: msg.apiKey,
           user: msg.user,
           team: msg.team,
           loggedInAt: Date.now(),
@@ -77,10 +137,14 @@ browser.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
 });
 
 function notifyAuth() {
-  browser.runtime.sendMessage({
-    type: "AUTH_UPDATED",
-    authenticated: true,
-  });
+  browser.runtime
+    .sendMessage({
+      type: "AUTH_UPDATED",
+      authenticated: true,
+    })
+    .catch(() => {
+      // Ignore errors if no one is listening
+    });
 }
 
 /* =====================
@@ -98,7 +162,7 @@ function storeMessages(msg, sendResponse) {
     });
 
     browser.storage.local.set({ [STORAGE_KEY]: arr }, () => {
-      browser.runtime.sendMessage({ type: "STORAGE_UPDATED" });
+      browser.runtime.sendMessage({ type: "STORAGE_UPDATED" }).catch(() => {});
       sendResponse({ ok: true });
     });
   });
@@ -172,7 +236,9 @@ async function flushToServer() {
 
       browser.storage.local.set({ [STORAGE_KEY]: [] }, () => {
         console.log("[Renard] Flush successful, buffer cleared");
-        browser.runtime.sendMessage({ type: "STORAGE_UPDATED" });
+        browser.runtime
+          .sendMessage({ type: "STORAGE_UPDATED" })
+          .catch(() => {});
       });
     } catch (err) {
       console.error("[Renard] Flush failed, will retry", err);
