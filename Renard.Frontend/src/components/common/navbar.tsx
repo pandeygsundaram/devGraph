@@ -87,6 +87,24 @@ export const Navbar = () => {
                   {link}
                 </a>
               ))}
+              <div className="flex flex-col gap-3">
+                <button
+                  className="text-foreground hover:text-primary font-medium text-sm"
+                  onClick={() => {
+                    nav("/login");
+                  }}
+                >
+                  Log in
+                </button>
+                <Button
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                  onClick={() => {
+                    nav("/signup");
+                  }}
+                >
+                  Get Started
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}

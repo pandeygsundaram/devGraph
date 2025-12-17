@@ -62,6 +62,7 @@ export default function SignupPage() {
       setIsLoading(false);
     }
   }
+  const nav = useNavigate();
 
   return (
     <AuthLayout
@@ -206,19 +207,23 @@ export default function SignupPage() {
 
         <p className="px-8 text-center text-sm text-muted-foreground">
           By clicking continue, you agree to our{" "}
-          <a
-            href="#"
+          <button
+            onClick={() => {
+              nav("/terms");
+            }}
             className="underline underline-offset-4 hover:text-primary"
           >
             Terms of Service
-          </a>{" "}
+          </button>{" "}
           and{" "}
-          <a
-            href="#"
+          <button
+            onClick={() => {
+              nav("/terms");
+            }}
             className="underline underline-offset-4 hover:text-primary"
           >
             Privacy Policy
-          </a>
+          </button>
           .
         </p>
 

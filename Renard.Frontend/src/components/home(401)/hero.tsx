@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
+  const nav = useNavigate();
   return (
     <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
@@ -15,7 +17,7 @@ export const Hero = () => {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
           </span>
-          v2.0 Now Available with Cursor Support
+          v1.0 Now Available with CLI Support
         </motion.div>
 
         <motion.h1
@@ -36,7 +38,7 @@ export const Hero = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-6 text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
         >
-          Automatically capture context from AI chats, CLI, and IDEs. Renard
+          Automatically capture developer context from AI chats, CLI, and IDEs. Renard
           summarizes your scattered logs into clear, actionable insights.
         </motion.p>
 
@@ -46,7 +48,12 @@ export const Hero = () => {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <button className="bg-primary text-primary-foreground px-8 py-4 rounded-full text-lg font-medium hover:bg-primary/90 transition-all flex items-center justify-center gap-2 group shadow-lg shadow-primary/25">
+          <button
+            className="bg-primary text-primary-foreground px-8 py-4 rounded-full text-lg font-medium hover:bg-primary/90 transition-all flex items-center justify-center gap-2 group shadow-lg shadow-primary/25"
+            onClick={() => {
+              nav("/signup");
+            }}
+          >
             Start Tracking Free
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>

@@ -123,3 +123,7 @@
 * {
   font-family: "JetBrains Mono", monospace;
 }
+
+button {
+  cursor: pointer;
+}

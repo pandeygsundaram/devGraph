@@ -17,6 +17,8 @@ import { PublicRoute } from "./components/auth/publicRoute";
 import ExtensionLoginPage from "./components/auth/extension-login";
 import ExtensionSignupPage from "./components/auth/extension-signup";
 import ExtensionSuccess from "./components/auth/extension-success";
+import PrivacyPolicy from "./pages/legal/privacy";
+import TermsPage from "./pages/legal/terms";
 
 function App() {
   return (
@@ -25,6 +27,8 @@ function App() {
       <Route path="/extension-login" element={<ExtensionLoginPage />} />
       <Route path="/extension-signup" element={<ExtensionSignupPage />} />
       <Route path="/extension-success" element={<ExtensionSuccess />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsPage />} />
 
       {/* --- Guest Only Routes (Login/Signup) --- */}
       {/* If logged in, these redirect to /dashboard */}

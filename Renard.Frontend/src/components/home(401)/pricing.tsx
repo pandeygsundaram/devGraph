@@ -1,6 +1,8 @@
 import { CheckCircle2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const Pricing = () => {
+  const nav = useNavigate();
   return (
     <section className="py-24 bg-secondary/30" id="pricing">
       <div className="max-w-7xl mx-auto px-4 text-center">
@@ -29,7 +31,12 @@ export const Pricing = () => {
                 Summaries
               </li>
             </ul>
-            <button className="mt-8 w-full bg-secondary text-secondary-foreground py-2.5 rounded-lg font-medium hover:bg-secondary/80">
+            <button
+              className="mt-8 w-full bg-secondary text-secondary-foreground py-2.5 rounded-lg font-medium hover:bg-secondary/80"
+              onClick={() => {
+                nav("/signup");
+              }}
+            >
               Get Started
             </button>
           </div>
@@ -37,7 +44,9 @@ export const Pricing = () => {
           {/* Pro */}
           <div className="bg-primary p-8 rounded-2xl border border-primary shadow-xl text-left relative overflow-hidden group">
             <div className="absolute top-0 right-0 bg-gradient-to-bl from-primary/60 to-transparent w-20 h-20 opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
-            <h3 className="text-lg font-semibold text-primary-foreground">Pro Team</h3>
+            <h3 className="text-lg font-semibold text-primary-foreground">
+              Pro Team
+            </h3>
             <div className="mt-4 flex items-baseline">
               <span className="text-4xl font-bold tracking-tight text-primary-foreground">
                 $29
@@ -49,15 +58,16 @@ export const Pricing = () => {
             </p>
             <ul className="mt-6 space-y-4 text-sm text-primary-foreground/90">
               <li className="flex gap-2">
-                <CheckCircle2 className="w-4 h-4 text-primary-foreground" /> Unlimited
-                retention
+                <CheckCircle2 className="w-4 h-4 text-primary-foreground" />{" "}
+                Unlimited retention
               </li>
               <li className="flex gap-2">
-                <CheckCircle2 className="w-4 h-4 text-primary-foreground" /> Full Vector
-                Search
+                <CheckCircle2 className="w-4 h-4 text-primary-foreground" />{" "}
+                Full Vector Search
               </li>
               <li className="flex gap-2">
-                <CheckCircle2 className="w-4 h-4 text-primary-foreground" /> Admin Dashboards
+                <CheckCircle2 className="w-4 h-4 text-primary-foreground" />{" "}
+                Admin Dashboards
               </li>
             </ul>
             <button className="mt-8 w-full bg-primary-foreground text-primary py-2.5 rounded-lg font-bold hover:bg-primary-foreground/90">
@@ -88,7 +98,7 @@ export const Pricing = () => {
               </li>
             </ul>
             <button className="mt-8 w-full bg-secondary text-secondary-foreground py-2.5 rounded-lg font-medium hover:bg-secondary/80">
-              Contact Sales
+              Lets Talk
             </button>
           </div>
         </div>
