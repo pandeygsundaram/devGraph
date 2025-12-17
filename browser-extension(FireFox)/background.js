@@ -19,7 +19,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "AUTH_LOGIN") {
     browser.tabs
       .create({
-        url: "http://localhost:5173/extension-login?source=extension",
+        url: "https://renard.live/extension-login?source=extension",
       })
       .then((tab) => {
         // Inject the bridge script after tab opens
