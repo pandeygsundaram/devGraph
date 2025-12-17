@@ -137,14 +137,12 @@ browser.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
 });
 
 function notifyAuth() {
-  browser.runtime
-    .sendMessage({
+  browser.storage.local.get(AUTH_KEY, (res) => {
+    browser.runtime.sendMessage({
       type: "AUTH_UPDATED",
-      authenticated: true,
-    })
-    .catch(() => {
-      // Ignore errors if no one is listening
+      authenticated: !!res[AUTH_KEY],
     });
+  });
 }
 
 /* =====================

@@ -20,15 +20,17 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 function updateAuthUI(resp) {
-  if (resp?.authenticated) {
-    statusEl.textContent = "Logged in";
-    loginBtn.style.display = "none";
-    logoutBtn.style.display = "inline-block";
-  } else {
-    statusEl.textContent = "Not logged in";
-    loginBtn.style.display = "inline-block";
-    logoutBtn.style.display = "none";
+  const authenticated = !!resp?.authenticated;
+  statusEl.classList.toggle("authenticated", authenticated);
+  let textNode = statusEl.querySelector(".status-text");
+  if (!textNode) {
+    textNode = document.createElement("span");
+    textNode.className = "status-text";
+    statusEl.appendChild(textNode);
   }
+  textNode.textContent = authenticated ? " Logged in" : " Not logged in";
+  loginBtn.style.display = authenticated ? "none" : "inline-block";
+  logoutBtn.style.display = authenticated ? "inline-block" : "none";
 }
 
 function load() {

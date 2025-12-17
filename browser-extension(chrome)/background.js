@@ -77,9 +77,11 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
 });
 
 function notifyAuth() {
-  chrome.runtime.sendMessage({
-    type: "AUTH_UPDATED",
-    authenticated: true,
+  chrome.storage.local.get(AUTH_KEY, (res) => {
+    chrome.runtime.sendMessage({
+      type: "AUTH_UPDATED",
+      authenticated: !!res[AUTH_KEY],
+    });
   });
 }
 
