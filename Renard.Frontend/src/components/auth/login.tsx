@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const GOOGLE_AUTH_URL = `${import.meta.env.VITE_SERVER}/auth/google`;
+  const GITHUB_AUTH_URL = `${import.meta.env.VITE_SERVER}/auth/github`;
 
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_SERVER;
@@ -145,7 +146,8 @@ export default function LoginPage() {
         <div className="grid grid-cols-2 gap-4">
           <Button
             disabled={isLoading}
-            variant="outline" // Assuming you have variants set up in your Button component, otherwise use className
+            onClick={() => (window.location.href = GITHUB_AUTH_URL)}
+            variant="outline"
             className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 w-full text-foreground"
           >
             <Github className="mr-2 h-4 w-4" />

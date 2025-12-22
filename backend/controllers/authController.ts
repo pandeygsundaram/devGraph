@@ -194,3 +194,30 @@ export const getProfile = async (
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const setPassword = async (req: Request, res: Response) => {
+  try {
+    const { newPassword } = req.body;
+    const userId = (req as any).user.id;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res
+        .status(400)
+        .json({ error: "Password must be at least 6 characters" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    res.status(200).json({
+      message:
+        "Password updated successfully. You can now use this password for the CLI and Extension.",
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to set password" });
+  }
+};

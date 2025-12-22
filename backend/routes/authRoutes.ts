@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { body } from "express-validator";
-import { register, login, getProfile } from "../controllers/authController";
+import {
+  register,
+  login,
+  getProfile,
+  setPassword,
+} from "../controllers/authController";
 import { authenticate } from "../middleware/auth";
 import { authRateLimiter } from "../middleware/rateLimiter";
 import passport from "passport";
@@ -30,6 +35,8 @@ router.post(
   login
 );
 
+router.post("/set-password", authenticate, setPassword);
+
 router.get("/profile", authenticate, getProfile);
 
 //google oauth
@@ -38,13 +45,27 @@ router.get(
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
-// Callback
 router.get(
   "/google/callback",
   passport.authenticate("google", { session: false }),
   (req, res) => {
     const { token } = req.user as any;
 
+    res.redirect(`${config.FRONTEND_URL}/auth/callback?token=${token}`);
+  }
+);
+
+//github oauth
+router.get(
+  "/github",
+  passport.authenticate("github", { scope: ["user:email"] })
+);
+
+router.get(
+  "/github/callback",
+  passport.authenticate("github", { session: false }),
+  (req, res) => {
+    const { token } = req.user as any;
     res.redirect(`${config.FRONTEND_URL}/auth/callback?token=${token}`);
   }
 );

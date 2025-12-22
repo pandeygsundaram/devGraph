@@ -7,6 +7,7 @@ import { useNavigate, Link } from "react-router-dom";
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const GOOGLE_AUTH_URL = `${import.meta.env.VITE_SERVER}/auth/google`;
+  const GITHUB_AUTH_URL = `${import.meta.env.VITE_SERVER}/auth/github`;
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -84,6 +85,7 @@ export default function SignupPage() {
           <button
             type="button"
             disabled={isLoading}
+            onClick={() => (window.location.href = GITHUB_AUTH_URL)}
             className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 w-full text-foreground"
           >
             <Github className="mr-2 h-4 w-4" />
