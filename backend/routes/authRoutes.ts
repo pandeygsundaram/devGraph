@@ -5,6 +5,10 @@ import {
   login,
   getProfile,
   setPassword,
+  forgotPassword,
+  resetPassword,
+  verifyOtp,
+  resendOtp,
 } from "../controllers/authController";
 import { authenticate } from "../middleware/auth";
 import { authRateLimiter } from "../middleware/rateLimiter";
@@ -26,6 +30,23 @@ router.post(
 );
 
 router.post(
+  "/verify-otp",
+  [
+    body("email").isEmail().withMessage("Please provide a valid email"),
+    body("otp")
+      .isLength({ min: 6, max: 6 })
+      .withMessage("OTP must be 6 digits"),
+  ],
+  verifyOtp
+);
+
+router.post(
+  "/resend-otp",
+  [body("email").isEmail().withMessage("Please provide a valid email")],
+  resendOtp
+);
+
+router.post(
   "/login",
   // authRateLimiter,
   [
@@ -38,6 +59,25 @@ router.post(
 router.post("/set-password", authenticate, setPassword);
 
 router.get("/profile", authenticate, getProfile);
+
+// Forgot Password -
+router.post(
+  "/forgot-password",
+  [body("email").isEmail().withMessage("Please provide a valid email")],
+  forgotPassword
+);
+
+// Reset Password
+router.post(
+  "/reset-password",
+  [
+    body("token").notEmpty().withMessage("Token is required"),
+    body("newPassword")
+      .isLength({ min: 6 })
+      .withMessage("Password must be at least 6 characters"),
+  ],
+  resetPassword
+);
 
 //google oauth
 router.get(

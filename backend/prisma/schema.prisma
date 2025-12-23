@@ -9,22 +9,29 @@ datasource db {
 }
 
 model User {
-  id              String       @id @default(uuid())
-  email           String       @unique
-  password        String
-  name            String
-  role            Role         @default(EMPLOYEE)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  accountType     AccountType  @default(INDIVIDUAL)
-  apiKey          String?      @unique
-  createdBy       String?
-  isActive        Boolean      @default(true)
-  activities      Activity[]
-  teamMemberships TeamMember[]
-  User            User?        @relation("UserToUser", fields: [createdBy], references: [id])
-  other_User      User[]       @relation("UserToUser")
-  workLogs        WorkLog[]
+  id                   String       @id @default(uuid())
+  email                String       @unique
+  password             String
+  name                 String
+  role                 Role         @default(EMPLOYEE)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  accountType          AccountType  @default(INDIVIDUAL)
+  apiKey               String?      @unique
+  createdBy            String?
+  isActive             Boolean      @default(true)
+  authProvider         String       @default("EMAIL")
+  isVerified           Boolean      @default(false)
+  hasSetPassword       Boolean      @default(true)
+  otp                  String?
+  otpExpiry            DateTime?
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  activities           Activity[]
+  teamMemberships      TeamMember[]
+  User                 User?        @relation("UserToUser", fields: [createdBy], references: [id])
+  other_User           User[]       @relation("UserToUser")
+  workLogs             WorkLog[]
 }
 
 model Team {
