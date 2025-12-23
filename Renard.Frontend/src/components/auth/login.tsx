@@ -102,12 +102,14 @@ export default function LoginPage() {
                 >
                   Password
                 </label>
-                <a
-                  href="#"
+                <button
+                  onClick={() => {
+                    navigate("/forgot-password");
+                  }}
                   className="text-xs text-primary hover:text-primary/80 font-medium"
                 >
                   Forgot password?
-                </a>
+                </button>
               </div>
               <input
                 id="password"

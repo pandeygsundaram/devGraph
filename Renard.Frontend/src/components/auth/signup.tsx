@@ -6,16 +6,18 @@ import { useNavigate, Link } from "react-router-dom";
 
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  // Auth URLs
   const GOOGLE_AUTH_URL = `${import.meta.env.VITE_SERVER}/auth/google`;
   const GITHUB_AUTH_URL = `${import.meta.env.VITE_SERVER}/auth/github`;
+  const API_URL = import.meta.env.VITE_SERVER;
 
+  // Form State
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_SERVER;
 
   async function onSubmit(event: React.SyntheticEvent) {
     event.preventDefault();
@@ -23,26 +25,18 @@ export default function SignupPage() {
     setError("");
 
     try {
-      const response = await axios.post(`${API_URL}/auth/register`, {
+      // 1. Call Register API (Now sends OTP email instead of returning token)
+      await axios.post(`${API_URL}/auth/register`, {
         name,
         email,
         password,
       });
 
-      const { token, user, apiKey, team } = response.data;
-
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-
-      if (apiKey) {
-        localStorage.setItem("apiKey", apiKey);
-      }
-
-      if (team) {
-        localStorage.setItem("team", JSON.stringify(team));
-      }
-
-      navigate("/dashboard");
+      // 2. Redirect to Verify Page
+      // We pass the email in 'state' so the Verify page can pre-fill the input
+      navigate("/verify", {
+        state: { email: email },
+      });
     } catch (err: any) {
       console.error("Registration error", err);
 
@@ -63,7 +57,6 @@ export default function SignupPage() {
       setIsLoading(false);
     }
   }
-  const nav = useNavigate();
 
   return (
     <AuthLayout
@@ -212,7 +205,7 @@ export default function SignupPage() {
           By clicking continue, you agree to our{" "}
           <button
             onClick={() => {
-              nav("/terms");
+              navigate("/terms");
             }}
             className="underline underline-offset-4 hover:text-primary"
           >
@@ -221,7 +214,7 @@ export default function SignupPage() {
           and{" "}
           <button
             onClick={() => {
-              nav("/terms");
+              navigate("/terms");
             }}
             className="underline underline-offset-4 hover:text-primary"
           >
