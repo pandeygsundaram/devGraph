@@ -21,7 +21,7 @@ model User {
   createdBy            String?
   isActive             Boolean      @default(true)
   authProvider         String       @default("EMAIL")
-  isVerified           Boolean      @default(false)
+  isVerified           Boolean
   hasSetPassword       Boolean      @default(true)
   otp                  String?
   otpExpiry            DateTime?

@@ -14,13 +14,26 @@ export default function OAuthCallback() {
       try {
         const params = new URLSearchParams(window.location.search);
         const token = params.get("token");
+        const userJson = params.get("user");
 
         if (!token) {
           throw new Error("No token found in URL");
         }
 
+        // 1. Store Token
         localStorage.setItem("token", token);
 
+        // 2. Parse User Data from URL (Contains authProvider & hasSetPassword)
+        let urlUserData = {};
+        if (userJson) {
+          try {
+            urlUserData = JSON.parse(decodeURIComponent(userJson));
+          } catch (e) {
+            console.error("Failed to parse user from URL", e);
+          }
+        }
+
+        // 3. Fetch Full Profile (Contains Team & API Key)
         const response = await axios.get(
           `${import.meta.env.VITE_SERVER}/auth/profile`,
           {
@@ -30,9 +43,16 @@ export default function OAuthCallback() {
           }
         );
 
-        const { user, apiKey, team } = response.data;
+        const { user: profileUser, apiKey, team } = response.data;
 
-        localStorage.setItem("user", JSON.stringify(user));
+        // 4. Merge Data (Profile data + URL flags)
+        // We prioritise URL data for auth flags, and Profile data for Name/Email
+        const finalUser = {
+          ...profileUser,
+          ...urlUserData,
+        };
+
+        localStorage.setItem("user", JSON.stringify(finalUser));
 
         if (apiKey) {
           localStorage.setItem("apiKey", apiKey);
@@ -52,5 +72,4 @@ export default function OAuthCallback() {
 
     completeLogin();
   }, [navigate]);
-  return null;
 }

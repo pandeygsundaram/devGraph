@@ -4,13 +4,12 @@
   "description": "DevTrack AI Backend - Productivity tracking platform for engineering teams",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node server.ts",
+    "dev": "tsx watch server.ts",
     "build": "tsc && cp -r generated dist/",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prisma:studio": "prisma studio"
   },
   "keywords": [],
   "author": "",
@@ -49,6 +48,7 @@
     "nodemon": "^3.1.11",
     "prisma": "^6.19.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

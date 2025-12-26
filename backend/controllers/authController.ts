@@ -220,16 +220,11 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
 
     // Send via gRPC
     try {
-      await sendNotificationEmail(
-        user.id,
-        user.email,
-        "OTP",
-        {
-          name: user.name,
-          otp: otp,
-          expiryMinutes: 10,
-        }
-      );
+      await sendNotificationEmail(user.id, user.email, "OTP", {
+        name: user.name,
+        otp: otp,
+        expiryMinutes: 10,
+      });
     } catch (error) {
       console.error("Failed to resend OTP email:", error);
       res.status(500).json({ error: "Failed to send email" });
@@ -300,6 +295,8 @@ export const login = async (
         name: user.name,
         role: user.role,
         isVerified: user.isVerified,
+        authProvider: user.authProvider,
+        hasSetPassword: user.hasSetPassword,
       },
       token,
       apiKey: user.apiKey,
@@ -380,15 +377,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     // Send via gRPC
     try {
-      await sendNotificationEmail(
-        user.id,
-        user.email,
-        "RESET_PASSWORD",
-        {
-          name: user.name,
-          link: resetLink,
-        }
-      );
+      await sendNotificationEmail(user.id, user.email, "RESET_PASSWORD", {
+        name: user.name,
+        link: resetLink,
+      });
     } catch (err) {
       // Rollback on failure
       await prisma.user.update({

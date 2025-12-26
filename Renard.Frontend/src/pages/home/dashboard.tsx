@@ -8,6 +8,9 @@ import {
   Clock,
   Brain,
   Activity,
+  Lock,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { ActivityHeatmap } from "@/components/common/ActivityHeatmap";
 import { useEffect, useState } from "react";
@@ -25,6 +28,15 @@ export default function DashboardPage() {
   });
   const [loading, setLoading] = useState(true);
 
+  // --- Password Set State ---
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
   const API_URL = import.meta.env.VITE_SERVER;
 
   useEffect(() => {
@@ -34,6 +46,7 @@ export default function DashboardPage() {
 
   const fetchUserData = async () => {
     try {
+      // Load directly from local storage (no API call needed)
       const userData = localStorage.getItem("user");
       const teamData = localStorage.getItem("team");
       const apiKeyData = localStorage.getItem("apiKey");
@@ -63,17 +76,78 @@ export default function DashboardPage() {
 
       setActivities(response.data.activities || []);
 
-      // Calculate basic stats
       const total = response.data.count || 0;
       setStats({
         totalActivities: total,
-        totalHours: total * 0.5, // Estimate
+        totalHours: total * 0.5,
         productivityScore: Math.min(100, total * 2),
       });
     } catch (error) {
       console.error("Error fetching activities:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMsg(null);
+
+    if (newPassword.length < 6) {
+      setPasswordMsg({
+        type: "error",
+        text: "Password must be at least 6 characters.",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ type: "error", text: "Passwords do not match." });
+      return;
+    }
+
+    setPasswordLoading(true);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      // 1. API Call
+      await axios.post(
+        `${API_URL}/auth/set-password`,
+        { newPassword },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setPasswordMsg({
+        type: "success",
+        text: "Password set successfully! You can now use it for CLI/Extension login.",
+      });
+
+      // 2. Client-Side Update (No API call to /profile)
+      if (user) {
+        // Create updated user object
+        const updatedUser = { ...user, hasSetPassword: true };
+
+        // Update React State (Hides the form instantly)
+        setUser(updatedUser);
+
+        // Update LocalStorage (Persists changes on reload)
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+
+      // Clear inputs
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      console.error("Set password error:", error);
+      setPasswordMsg({
+        type: "error",
+        text: error.response?.data?.error || "Failed to set password.",
+      });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -107,27 +181,109 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Team & API Info */}
+      {/* Team & API Info + Set Password Section */}
       {(team || apiKey) && (
-        <div className="mb-6 bg-card border border-border rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
+        <div className="mb-6 space-y-4">
+          {/* Info Card */}
+          <div className="bg-card border border-border rounded-xl p-4 flex items-center justify-between shadow-sm">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
               {team && (
-                <div className="mb-2">
-                  <span className="text-sm text-muted-foreground">Current Team:</span>
-                  <p className="font-semibold text-foreground">{team.name}</p>
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Current Team
+                  </span>
+                  <p className="font-semibold text-foreground text-sm mt-1">
+                    {team.name}
+                  </p>
                 </div>
               )}
               {apiKey && (
                 <div>
-                  <span className="text-sm text-muted-foreground">API Key:</span>
-                  <p className="font-mono text-xs text-foreground bg-secondary px-2 py-1 rounded inline-block mt-1">
-                    {apiKey.substring(0, 20)}...
-                  </p>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    API Key
+                  </span>
+                  <div className="mt-1 flex items-center gap-2">
+                    <p className="font-mono text-xs text-foreground bg-secondary px-2 py-1 rounded">
+                      {apiKey.substring(0, 20)}...
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Set Password Form (Only if hasSetPassword is false) */}
+          {user && !user.hasSetPassword && (
+            <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4 md:p-6 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/40 rounded-lg text-orange-600 dark:text-orange-400">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground mb-1">
+                    Create a Password for CLI Access
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4 max-w-2xl">
+                    Since you signed up with Google/GitHub, you need to set a
+                    local password to log in to the Renard CLI tool and Browser
+                    Extension.
+                  </p>
+
+                  <form
+                    onSubmit={handleSetPassword}
+                    className="flex flex-col md:flex-row gap-3 items-start"
+                  >
+                    <div className="w-full md:w-auto">
+                      <input
+                        type="password"
+                        placeholder="New Password"
+                        className="w-full md:w-48 px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="w-full md:w-auto">
+                      <input
+                        type="password"
+                        placeholder="Confirm Password"
+                        className="w-full md:w-48 px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={passwordLoading}
+                      className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {passwordLoading && (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      )}
+                      Set Password
+                    </button>
+                  </form>
+
+                  {/* Feedback Messages */}
+                  {passwordMsg && (
+                    <div
+                      className={`mt-3 text-sm font-medium flex items-center gap-2 ${
+                        passwordMsg.type === "success"
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {passwordMsg.type === "success" && (
+                        <CheckCircle2 className="w-4 h-4" />
+                      )}
+                      {passwordMsg.text}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -194,7 +350,8 @@ export default function DashboardPage() {
                 ))
               ) : (
                 <div className="px-6 py-8 text-center text-muted-foreground">
-                  No activities yet. Start using Renard to see your work logs here.
+                  No activities yet. Start using Renard to see your work logs
+                  here.
                 </div>
               )}
             </div>
