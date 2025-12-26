@@ -83,9 +83,9 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthLayout
-      quote="Security isn't an afterthought with Renard. The granular access controls and audit logs give us total peace of mind."
-      author="Sarah Jenkins"
-      role="CISO at TechFlow"
+    // quote="Security isn't an afterthought with Renard. The granular access controls and audit logs give us total peace of mind."
+    // author="S"
+    // role="CISO at TechFlow"
     >
       <div className="flex flex-col space-y-2 text-center">
         {/* Dynamic Icon */}

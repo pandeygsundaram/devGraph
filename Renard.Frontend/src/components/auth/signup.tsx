@@ -61,8 +61,8 @@ export default function SignupPage() {
   return (
     <AuthLayout
       quote="The admin insights alone saved us 20 hours of meetings a week. It's an indispensable tool for scaling teams."
-      author="Marcus Reed"
-      role="VP Engineering at Nexus"
+      author="Mohana Vamshi"
+      role="VP Engineering, Amazon"
     >
       <div className="flex flex-col space-y-2 text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">

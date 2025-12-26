@@ -10,11 +10,7 @@ interface LegalLayoutProps {
   lastUpdated: string;
 }
 
-export function LegalLayout({
-  children,
-  title,
-  lastUpdated,
-}: LegalLayoutProps) {
+export function BlogLayout({ children, title, lastUpdated }: LegalLayoutProps) {
   const nav = useNavigate();
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-orange-500/30">
@@ -46,14 +42,7 @@ export function LegalLayout({
       </nav>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto px-6 py-16 md:py-24">
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-primary mb-4">
-            {title}
-          </h1>
-          <p className="text-muted-foreground">Last updated: {lastUpdated}</p>
-        </div>
-
+      <main className="max-w-5xl mx-auto px-6">
         {/* Typography Styles using standard Tailwind Prose-like styling manually for precise control */}
         <div className="space-y-12 leading-relaxed">{children}</div>
       </main>

@@ -1,13 +1,9 @@
 export const Logos = () => {
   const companies = [
-    "Acme Corp",
-    "Renard Inc",
-    "Echo",
-    "Celestial",
-    "Pulse",
-    "Apex",
-    "Zenith",
-    "Horizon",
+    "Outceedo",
+    "Moovicart",
+    "WallStorie",
+    "SnapPlay"
   ];
 
   return (

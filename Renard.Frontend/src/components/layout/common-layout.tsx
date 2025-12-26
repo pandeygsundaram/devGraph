@@ -10,7 +10,7 @@ interface LegalLayoutProps {
   lastUpdated: string;
 }
 
-export function LegalLayout({
+export function CommonLayout({
   children,
   title,
   lastUpdated,
@@ -46,12 +46,12 @@ export function LegalLayout({
       </nav>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto px-6 py-16 md:py-24">
+      <main className="max-w-5xl mx-auto px-6 py-16 md:py-24">
         <div className="mb-12 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-primary mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
             {title}
           </h1>
-          <p className="text-muted-foreground">Last updated: {lastUpdated}</p>
+          <p className="text-muted-foreground">{lastUpdated}</p>
         </div>
 
         {/* Typography Styles using standard Tailwind Prose-like styling manually for precise control */}

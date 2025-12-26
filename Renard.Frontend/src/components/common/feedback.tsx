@@ -168,7 +168,7 @@ export default function FeedbackPage() {
           <div className="space-y-2">
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-foreground"
+              className="block text-lg font-medium text-foreground text-primary"
             >
               Email Address
             </label>
@@ -191,7 +191,7 @@ export default function FeedbackPage() {
 
         {/* Section 1: Usability */}
         <div className="space-y-4">
-          <h3 className="text-xl font-bold text-foreground border-b border-border pb-2">
+          <h3 className="text-xl font-bold border-b border-border pb-2 text-primary">
             Usability & Tools
           </h3>
 
@@ -222,7 +222,7 @@ export default function FeedbackPage() {
 
         {/* Section 2: Core Value */}
         <div className="space-y-4">
-          <h3 className="text-xl font-bold text-foreground border-b border-border pb-2">
+          <h3 className="text-xl font-bold text-primary border-b border-border pb-2">
             Intelligence & Value
           </h3>
 
@@ -261,7 +261,7 @@ export default function FeedbackPage() {
 
         {/* Section 3: Overall */}
         <div className="space-y-4">
-          <h3 className="text-xl font-bold text-foreground border-b border-border pb-2">
+          <h3 className="text-xl font-bold text-primary border-b border-border pb-2">
             Overall Impressions
           </h3>
 
@@ -284,7 +284,7 @@ export default function FeedbackPage() {
                 setFormData((prev) => ({ ...prev, experience: e.target.value }))
               }
               placeholder="Tell us about your workflow..."
-              className="w-full min-h-[100px] p-4 rounded-xl bg-secondary/30 border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+              className="w-full min-h-25 p-4 rounded-xl bg-secondary/30 border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
             />
           </div>
 
@@ -302,7 +302,7 @@ export default function FeedbackPage() {
                 }))
               }
               placeholder="Missing features, bugs, or annoyances..."
-              className="w-full min-h-[100px] p-4 rounded-xl bg-secondary/30 border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+              className="w-full min-h-25 p-4 rounded-xl bg-secondary/30 border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
             />
           </div>
         </div>
@@ -312,7 +312,7 @@ export default function FeedbackPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-full font-bold text-lg shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-full font-bold text-lg shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mx-auto"
           >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />

@@ -36,7 +36,7 @@ export const Footer = () => {
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Cunningly smart productivity
-              <br /> tracking for engineering teams.
+              <br /> management for engineering teams.
             </p>
           </div>
 
@@ -82,7 +82,7 @@ export const Footer = () => {
                 <Button
                   variant="link"
                   className="p-0 h-auto text-muted-foreground hover:text-primary transition-colors font-normal"
-                  onClick={() => nav("/")}
+                  onClick={() => nav("/about")}
                 >
                   About
                 </Button>
@@ -91,7 +91,7 @@ export const Footer = () => {
                 <Button
                   variant="link"
                   className="p-0 h-auto text-muted-foreground hover:text-primary transition-colors font-normal"
-                  onClick={() => nav("/")}
+                  onClick={() => nav("/blogs")}
                 >
                   Blog
                 </Button>
@@ -100,9 +100,9 @@ export const Footer = () => {
                 <Button
                   variant="link"
                   className="p-0 h-auto text-muted-foreground hover:text-primary transition-colors font-normal"
-                  onClick={() => nav("/")}
+                  onClick={() => nav("/feedback")}
                 >
-                  Careers
+                  Feedback
                 </Button>
               </li>
             </ul>

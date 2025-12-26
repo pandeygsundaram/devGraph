@@ -135,7 +135,7 @@ export const FlowSection = () => {
                 </circle>
               </svg>
             </div>
-
+            <div className="block md:hidden h-8 border-l-2 border-dashed border-border"></div>
             {/* Output */}
             <div className="w-full md:w-64 bg-card rounded-xl border border-border shadow-sm p-4 z-20">
               <div className="flex items-center gap-2 mb-3 border-b border-border pb-2">
