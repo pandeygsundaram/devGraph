@@ -5,6 +5,7 @@ import { Strategy as GitHubStrategy } from "passport-github2";
 import prisma from "./database";
 import jwt from "jsonwebtoken";
 import config from "./index";
+import { sendNotificationEmail } from "../utils/grpc";
 
 passport.use(
   new GoogleStrategy(
@@ -33,6 +34,17 @@ passport.use(
               password: hashedPassword,
             },
           });
+        }
+
+        try {
+          await sendNotificationEmail(profile.id, email, "WELCOME", {
+            name: profile.displayName,
+            username: email.split("@")[0],
+            registrationDate: new Date().toLocaleDateString(),
+            loginLink: `${process.env.FRONTEND_URL}/login`,
+          });
+        } catch (error) {
+          console.error("Failed to queue Welcome email:", error);
         }
 
         const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {
@@ -83,6 +95,16 @@ passport.use(
               password: hashedPassword,
             },
           });
+        }
+        try {
+          await sendNotificationEmail(profile.id, email, "WELCOME", {
+            name: profile.displayName,
+            username: email.split("@")[0],
+            registrationDate: new Date().toLocaleDateString(),
+            loginLink: `${process.env.FRONTEND_URL}/login`,
+          });
+        } catch (error) {
+          console.error("Failed to queue Welcome email:", error);
         }
 
         // Generate Token

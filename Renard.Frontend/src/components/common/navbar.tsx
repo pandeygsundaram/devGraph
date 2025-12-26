@@ -53,7 +53,7 @@ export const Navbar = () => {
               )
             )}
 
-            <div className="h-4 w-[1px] bg-border mx-2" />
+            <div className="h-4 w-px bg-border mx-2" />
 
             <ModeToggle />
 

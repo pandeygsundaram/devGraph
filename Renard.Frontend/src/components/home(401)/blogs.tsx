@@ -29,7 +29,7 @@ export default function BlogPage() {
         <main className="flex-1 relative flex items-center justify-center py-20 overflow-hidden">
           {/* Background Patterns */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-125 h-125 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
 
           <div className="relative z-10 max-w-2xl mx-auto px-4 text-center">
             {/* Badge */}
@@ -137,7 +137,7 @@ export default function BlogPage() {
                     key={i}
                     className="p-4 rounded-xl bg-secondary/30 border border-transparent hover:border-primary/20 transition-colors flex items-start gap-3 opacity-60 hover:opacity-100 cursor-default"
                   >
-                    <BookOpen className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <BookOpen className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                     <span className="font-medium text-foreground">{topic}</span>
                   </div>
                 ))}

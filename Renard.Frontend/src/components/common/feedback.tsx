@@ -168,7 +168,7 @@ export default function FeedbackPage() {
           <div className="space-y-2">
             <label
               htmlFor="email"
-              className="block text-lg font-medium text-foreground text-primary"
+              className="block text-lg font-medium text-primary"
             >
               Email Address
             </label>
